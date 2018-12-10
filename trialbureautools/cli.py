@@ -13,15 +13,22 @@ from trialbureautools.tools import set_folder_rights, PERMISSIONS, ToolsExceptio
 
 @click.group()
 def cli():
+    """Trial bureau scripts"""
     pass
 
 
-@click.command()
+@click.command(short_help="Set folder permissions")
 @click.argument('folder', type=click.Path(exists=True, resolve_path=True))
 @click.argument('username', type=str)
 @click.argument('permission_name', type=click.Choice(list(PERMISSIONS.keys())))
 def set_folder_permissions(folder, username, permission_name):
-    """Set permissions for given folder and user
+    """Set permissions for given windows folder and windows user
+
+    Example:\b
+
+        set_folder_permissions C:\data z123456 full_access\b
+
+        sets the permissions for C:\data so that user 'z123456' has full access
 
     """
     try:
