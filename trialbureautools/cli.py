@@ -24,11 +24,11 @@ def cli():
 def set_folder_permissions(folder, username, permission_name):
     """Set permissions for given windows folder and windows user
 
-    Example:\b
+    Example:
 
-        set_folder_permissions C:\data z123456 full_access\b
+        set_folder_permissions C:\folder1 z123456 full_access\b
 
-        sets the permissions for C:\data so that user 'z123456' has full access
+        sets the permissions for C:\folder1 so that user 'z123456' has full access
 
     """
     try:
