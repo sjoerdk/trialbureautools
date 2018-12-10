@@ -3,6 +3,7 @@
 """ Python functions that could be of use for the trial bureau.
 
 Docstrings in this module are for programmers, so can be as detailed is needed """
+import os
 
 from icaclswrap.foldertool import WinFolderPermissionTool, ACLToolException
 
@@ -12,7 +13,7 @@ PERMISSIONS = {'full_access': FULL_ACCESS,
                'read_delete': READ_DELETE}
 
 
-def set_folder_rights(folder, username, permission_name):
+def set_folder_rights(folder, username, permission):
     """Set permissions from given
 
     Parameters
@@ -33,9 +34,40 @@ def set_folder_rights(folder, username, permission_name):
 
     tool = WinFolderPermissionTool()
     try:
-        tool.set_rights(path=folder, username=username, rights_collection=PERMISSIONS[permission_name])
+        tool.set_rights(path=folder, username=username, rights_collection=permission)
     except ACLToolException as e:
         raise ToolsException(str(e))
+
+
+class IDISOutputFolder:
+
+    def __init__(self, base_folder, z_number):
+        """Create z-number folder and set permissions
+
+        Parameters
+        ----------
+        base_folder: Path
+            create folder in this path
+        z_number: str
+            valid radboudumc z-number, like z123456
+
+        Raises
+        ------
+        ToolsException
+            when anything goes wrong with setting folder rights
+
+        """
+
+        self.z_number = z_number
+        self.path = str(base_folder / z_number)
+        self.initialized = False
+
+    def initialize(self):
+        try:
+            os.mkdir(self.path)
+        except FileExistsError as e:
+            raise ToolsException(str(e))
+        set_folder_rights(folder=self.path, username=self.z_number, permission=READ_DELETE)
 
 
 class ToolsException(Exception):

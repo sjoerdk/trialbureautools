@@ -8,15 +8,16 @@ from unittest.mock import patch
 from click.testing import CliRunner
 
 from icaclswrap.foldertool import WinFolderPermissionTool
-from trialbureautools.cli import set_folder_permissions
+from trialbureautools.cli import set_folder_permissions, create_idis_output_folder
 
 from tests import BASE_PATH
-from trialbureautools.tools import ToolsException
+from trialbureautools.tools import ToolsException, IDISOutputFolder
 
 
 @pytest.fixture()
 def cli_runner():
     return CliRunner()
+
 
 @pytest.mark.parametrize(
     "path_in, username_in, permission_in, expected_output",
@@ -80,10 +81,18 @@ def test_tools_exception_handling(cli_runner):
         "trialbureautools.tools.WinFolderPermissionTool.set_rights", autospec=True
     ) as mock_set_rights:
         mock_set_rights.side_effect = ToolsException("Something went very wrong")
-        result = cli_runner.invoke(
-            set_folder_permissions, [".", 'user', 'full_access']
-        )
-        assert 'Something went very wrong' in result.output
+        result = cli_runner.invoke(set_folder_permissions, [".", "user", "full_access"])
+        assert "Something went very wrong" in result.output
         assert result.exit_code == 0
 
 
+def test_create_CLI_function(cli_runner):
+    with patch(
+        "trialbureautools.tools.WinFolderPermissionTool.set_rights", autospec=True
+    ) as mock_set_rights:
+        with cli_runner.isolated_filesystem():
+            result = cli_runner.invoke(
+                create_idis_output_folder, [".", "z123456"], input="yes"
+            )
+            assert not result.exception
+        assert mock_set_rights.called
