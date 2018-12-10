@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 
-""" Python functions that could be of use for the trial bureau """
-from icaclswrap.foldertool import WinFolderPermissionTool
+""" Python functions that could be of use for the trial bureau.
+
+Docstrings in this module are for programmers, so can be as detailed is needed """
+
+from icaclswrap.foldertool import WinFolderPermissionTool, ACLToolException
 
 from icaclswrap.rights import FULL_ACCESS, READ_DELETE
 
@@ -21,7 +24,19 @@ def set_folder_rights(folder, username, permission_name):
     permission_name: str
         choice of any of trialbureautools.permissions.PERMISSIONS
 
+    Raises
+    ------
+    ToolsException
+        when anything goes wrong with setting folder rights
+
     """
 
     tool = WinFolderPermissionTool()
-    tool.set_rights(path=folder, username=username, rights_collection=PERMISSIONS[permission_name])
+    try:
+        tool.set_rights(path=folder, username=username, rights_collection=PERMISSIONS[permission_name])
+    except ACLToolException as e:
+        raise ToolsException(str(e))
+
+
+class ToolsException(Exception):
+    pass

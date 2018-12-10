@@ -8,7 +8,7 @@ docstrings in this module are displayed by the click CLI so should be user-cente
 import sys
 import click
 
-from trialbureautools.tools import set_folder_rights, PERMISSIONS
+from trialbureautools.tools import set_folder_rights, PERMISSIONS, ToolsException
 
 
 @click.group()
@@ -24,8 +24,11 @@ def set_folder_permissions(folder, username, permission_name):
     """Set permissions for given folder and user
 
     """
-    set_folder_rights(folder=folder, username=username, permission_name=permission_name)
-    click.echo(f"Set folder '{folder}' permissions to {permission_name}")
+    try:
+        set_folder_rights(folder=folder, username=username, permission_name=permission_name)
+        click.echo(f"Set folder '{folder}' permissions to {permission_name}")
+    except ToolsException as e:
+        click.echo(f'Error: { str(e) }')
 
 
 @click.command()
