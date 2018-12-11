@@ -70,8 +70,8 @@ def test_set_folder_permissions_faulty_parameter_responses(
     "path_in, username_in, permission_in",
     [
         (".", "testuser", "full_access"),  # relative path
-        (str(BASE_PATH), "testuser", "full_access"),  # absolute path ,
-        (str(BASE_PATH), "testuser", "read_delete"),  # other permission ,
+        (str(BASE_PATH), "testuser", "full_access"),  # absolute path which exists
+        (str(BASE_PATH), "testuser", "read_delete"),  # other permission
     ],
 )
 def test_set_folder_permissions_success(
@@ -97,11 +97,48 @@ def test_tools_exception_handling(cli_runner, mock_set_rights):
     assert result.exit_code == 0
 
 
-def test_create_output_folder(cli_runner, mock_set_rights):
-    """Test the create_idis_output_folder function """
+def test_create_output_folder_succes(cli_runner, mock_set_rights):
+    """Test the create_idis_output_folder function the way it should work"""
     with cli_runner.isolated_filesystem():
         result = cli_runner.invoke(
             create_idis_output_folder, [".", "z123456"], input="yes"
         )
         assert not result.exception
     assert mock_set_rights.called
+
+
+def test_create_output_folder_cancel(cli_runner, mock_set_rights):
+    """Test the create_idis_output_folder function by cancelling halfway through """
+    with cli_runner.isolated_filesystem():
+        result = cli_runner.invoke(
+            create_idis_output_folder, [".", "z123456"], input="no"
+        )
+        assert not result.exception
+    assert not mock_set_rights.called
+
+
+def test_create_output_folder_exception_handling(cli_runner, mock_set_rights):
+    """When internal functions fail there should still be a nice string output and no stackstraces to the user """
+    mock_set_rights.side_effect = ToolsException("Terrible problem with tools")
+    with cli_runner.isolated_filesystem():
+        result = cli_runner.invoke(
+            create_idis_output_folder, [".", "z123456"], input="yes"
+        )
+        assert not result.exception
+    assert result.exit_code == 0
+    assert 'Terrible problem with tools' in result.output
+
+
+def test_create_output_folder_exception_handling(cli_runner, mock_set_rights, monkeypatch):
+    """ Directory might already exist. Handle this gracefully"""
+    with cli_runner.isolated_filesystem():
+        def failing_mkdir(*args):
+            raise FileExistsError("Exists already")
+
+        monkeypatch.setattr('trialbureautools.tools.os.mkdir', failing_mkdir)
+        result = cli_runner.invoke(
+            create_idis_output_folder, [".", "z123456"], input="yes"
+        )
+        assert not result.exception
+    assert result.exit_code == 0
+    assert 'Exists already' in result.output
