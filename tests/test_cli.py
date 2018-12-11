@@ -4,7 +4,7 @@
 """Tests for `trialbureautools` package."""
 import pytest
 
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 from click.testing import CliRunner
 
 from icaclswrap.foldertool import WinFolderPermissionTool
@@ -17,6 +17,22 @@ from trialbureautools.tools import ToolsException, IDISOutputFolder
 @pytest.fixture()
 def cli_runner():
     return CliRunner()
+
+
+@pytest.fixture()
+def mock_set_rights(monkeypatch):
+    """Make sure the set_rights method does not actually modify things on disk
+
+    Returns
+    -------
+    Mock:
+        the mocked function set_rights
+    """
+    mocked_set_rights = Mock(spec=WinFolderPermissionTool.set_rights)
+    monkeypatch.setattr(
+        "trialbureautools.tools.WinFolderPermissionTool.set_rights", mocked_set_rights
+    )
+    return mocked_set_rights
 
 
 @pytest.mark.parametrize(
@@ -37,14 +53,14 @@ def cli_runner():
     ],
 )
 def test_set_folder_permissions_faulty_parameter_responses(
-    path_in, permission_in, username_in, expected_output, cli_runner
+    path_in, permission_in, username_in, expected_output, cli_runner, mock_set_rights
 ):
     """ Commands that are wrong somehow should be handled properly by click
     """
-    with patch.object(WinFolderPermissionTool, "set_rights") as mock_set_rights:
-        result = cli_runner.invoke(
-            set_folder_permissions, [path_in, username_in, permission_in]
-        )
+
+    result = cli_runner.invoke(
+        set_folder_permissions, [path_in, username_in, permission_in]
+    )
     assert not mock_set_rights.called
     assert result.exit_code == 2
     assert expected_output in result.output
@@ -59,40 +75,33 @@ def test_set_folder_permissions_faulty_parameter_responses(
     ],
 )
 def test_set_folder_permissions_success(
-    path_in, permission_in, username_in, cli_runner
+    path_in, permission_in, username_in, cli_runner, mock_set_rights
 ):
     """ Calling 'set_folder_permissions' an a few ways that should work'
     """
-    with patch(
-        "trialbureautools.tools.WinFolderPermissionTool.set_rights", autospec=True
-    ) as mock_set_rights:
-        result = cli_runner.invoke(
-            set_folder_permissions, [path_in, username_in, permission_in]
-        )
+
+    result = cli_runner.invoke(
+        set_folder_permissions, [path_in, username_in, permission_in]
+    )
     assert "Set folder" in result.output
     assert mock_set_rights.called
     assert result.exit_code == 0
 
 
-def test_tools_exception_handling(cli_runner):
+def test_tools_exception_handling(cli_runner, mock_set_rights):
     """ Tools might raise exceptions. These should be caught and displayed simply"""
 
-    with patch(
-        "trialbureautools.tools.WinFolderPermissionTool.set_rights", autospec=True
-    ) as mock_set_rights:
-        mock_set_rights.side_effect = ToolsException("Something went very wrong")
-        result = cli_runner.invoke(set_folder_permissions, [".", "user", "full_access"])
-        assert "Something went very wrong" in result.output
-        assert result.exit_code == 0
+    mock_set_rights.side_effect = ToolsException("Something went very wrong")
+    result = cli_runner.invoke(set_folder_permissions, [".", "user", "full_access"])
+    assert "Something went very wrong" in result.output
+    assert result.exit_code == 0
 
 
-def test_create_CLI_function(cli_runner):
-    with patch(
-        "trialbureautools.tools.WinFolderPermissionTool.set_rights", autospec=True
-    ) as mock_set_rights:
-        with cli_runner.isolated_filesystem():
-            result = cli_runner.invoke(
-                create_idis_output_folder, [".", "z123456"], input="yes"
-            )
-            assert not result.exception
-        assert mock_set_rights.called
+def test_create_output_folder(cli_runner, mock_set_rights):
+    """Test the create_idis_output_folder function """
+    with cli_runner.isolated_filesystem():
+        result = cli_runner.invoke(
+            create_idis_output_folder, [".", "z123456"], input="yes"
+        )
+        assert not result.exception
+    assert mock_set_rights.called
