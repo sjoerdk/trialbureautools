@@ -56,7 +56,7 @@ def create_idis_output_folder(base_folder, z_number):
     if click.confirm(f'This will create an IDIS output folder in "{folder.path}"'):
         try:
             folder.initialize()
-            click.echo(f'Done')
+            click.echo(f'Created folder {folder.path} with permissions: {folder.permission.description}')
         except ToolsException as e:
             click.echo(f'Error: { str(e) }')
     else:

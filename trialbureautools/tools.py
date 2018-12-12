@@ -22,7 +22,7 @@ def set_folder_rights(folder, username, permission):
         path to set permissions for. Can be relative or absolute
     username: str
         username to set permissions for
-    permission_name: str
+    permission: str
         choice of any of trialbureautools.permissions.PERMISSIONS
 
     Raises
@@ -61,13 +61,14 @@ class IDISOutputFolder:
         self.z_number = z_number
         self.path = str(base_folder / z_number)
         self.initialized = False
+        self.permission = READ_DELETE
 
     def initialize(self):
         try:
             os.mkdir(self.path)
         except FileExistsError as e:
             raise ToolsException(str(e))
-        set_folder_rights(folder=self.path, username=self.z_number, permission=READ_DELETE)
+        set_folder_rights(folder=self.path, username=self.z_number, permission=self.permission)
 
 
 class ToolsException(Exception):
