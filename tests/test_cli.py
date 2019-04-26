@@ -11,7 +11,7 @@ from icaclswrap.foldertool import WinFolderPermissionTool
 from trialbureautools.cli import set_folder_permissions, create_idis_output_folder
 
 from tests import BASE_PATH
-from trialbureautools.tools import ToolsException, IDISOutputFolder
+from trialbureautools.permissions import PermissionsException, IDISOutputFolder
 
 
 @pytest.fixture()
@@ -30,11 +30,11 @@ def mock_set_rights(monkeypatch):
     """
     mocked_set_rights = Mock(spec=WinFolderPermissionTool.set_rights)
     monkeypatch.setattr(
-        "trialbureautools.tools.WinFolderPermissionTool.set_rights", mocked_set_rights
+        "trialbureautools.permissions.WinFolderPermissionTool.set_rights", mocked_set_rights
     )
     return mocked_set_rights
 
-
+ 
 @pytest.mark.parametrize(
     "path_in, username_in, permission_in, expected_output",
     [
@@ -91,7 +91,7 @@ def test_set_folder_permissions_success(
 def test_tools_exception_handling(cli_runner, mock_set_rights):
     """ Tools might raise exceptions. These should be caught and displayed simply"""
 
-    mock_set_rights.side_effect = ToolsException("Something went very wrong")
+    mock_set_rights.side_effect = PermissionsException("Something went very wrong")
     result = cli_runner.invoke(set_folder_permissions, [".", "user", "full_access"])
     assert "Something went very wrong" in result.output
     assert result.exit_code == 0
@@ -119,7 +119,7 @@ def test_create_output_folder_cancel(cli_runner, mock_set_rights):
 
 def test_create_output_folder_exception_handling(cli_runner, mock_set_rights):
     """When internal functions fail there should still be a nice string output and no stackstraces to the user """
-    mock_set_rights.side_effect = ToolsException("Terrible problem with tools")
+    mock_set_rights.side_effect = PermissionsException("Terrible problem with tools")
     with cli_runner.isolated_filesystem():
         result = cli_runner.invoke(
             create_idis_output_folder, [".", "z123456"], input="yes"
@@ -135,7 +135,7 @@ def test_create_output_folder_exception_handling(cli_runner, mock_set_rights, mo
         def failing_mkdir(*args):
             raise FileExistsError("Exists already")
 
-        monkeypatch.setattr('trialbureautools.tools.os.mkdir', failing_mkdir)
+        monkeypatch.setattr('trialbureautools.permissions.os.mkdir', failing_mkdir)
         result = cli_runner.invoke(
             create_idis_output_folder, [".", "z123456"], input="yes"
         )

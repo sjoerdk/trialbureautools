@@ -10,7 +10,7 @@ from pathlib import Path
 
 import click
 
-from trialbureautools.tools import set_folder_rights, PERMISSIONS, ToolsException, IDISOutputFolder
+from trialbureautools.permissions import set_folder_rights, PERMISSIONS, PermissionsException, IDISOutputFolder
 
 
 @click.group()
@@ -36,7 +36,7 @@ def set_folder_permissions(folder, username, permission_name):
     try:
         set_folder_rights(folder=folder, username=username, permission=PERMISSIONS[permission_name])
         click.echo(f"Set folder '{folder}' permissions to {permission_name}")
-    except ToolsException as e:
+    except PermissionsException as e:
         click.echo(f'Error: { str(e) }')
 
 
@@ -57,7 +57,7 @@ def create_idis_output_folder(base_folder, z_number):
         try:
             folder.initialize()
             click.echo(f'Created folder {folder.path} with permissions: {folder.permission.description}')
-        except ToolsException as e:
+        except PermissionsException as e:
             click.echo(f'Error: { str(e) }')
     else:
         click.echo("cancelled")

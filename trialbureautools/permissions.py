@@ -27,7 +27,7 @@ def set_folder_rights(folder, username, permission):
 
     Raises
     ------
-    ToolsException
+    PermissionsException
         when anything goes wrong with setting folder rights
 
     """
@@ -36,7 +36,7 @@ def set_folder_rights(folder, username, permission):
     try:
         tool.set_rights(path=folder, username=username, rights_collection=permission)
     except ACLToolException as e:
-        raise ToolsException(str(e))
+        raise PermissionsException(str(e))
 
 
 class IDISOutputFolder:
@@ -53,7 +53,7 @@ class IDISOutputFolder:
 
         Raises
         ------
-        ToolsException
+        PermissionsException
             when anything goes wrong with setting folder rights
 
         """
@@ -67,9 +67,9 @@ class IDISOutputFolder:
         try:
             os.mkdir(self.path)
         except FileExistsError as e:
-            raise ToolsException(str(e))
+            raise PermissionsException(str(e))
         set_folder_rights(folder=self.path, username=self.z_number, permission=self.permission)
 
 
-class ToolsException(Exception):
+class PermissionsException(Exception):
     pass
