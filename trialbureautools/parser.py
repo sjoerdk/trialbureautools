@@ -12,11 +12,12 @@ class DicomPathPatternParser:
             r"""                
                             dicom_path_pattern: element+ 
                             element: dicom_element|string_literal|folder_separator
-                            string_literal: STRING_LITERAL                            
-                            dicom_element: dicom_element_tag_name | dicom_element_tag_code
-                            dicom_element_tag_name:"("LETTER+")"
-                            dicom_element_tag_code:"(" HEXDIGIT~4 "," HEXDIGIT~4 ")"
+                            string_literal: STRING_LITERAL                       
+                            dicom_element: "(" count_flag? (dicom_element_tag_name | dicom_element_tag_code) ")"
+                            dicom_element_tag_name: LETTER+
+                            dicom_element_tag_code: HEXDIGIT~4 "," HEXDIGIT~4
                             folder_separator:"/"|"\\"
+                            count_flag: "count:"
                             STRING_LITERAL: (LETTER|"_"|"-"|"+"|DIGIT)+
                             
                             
@@ -108,7 +109,15 @@ class DicomPathPatternTransformer(Transformer):
         return FolderSeparator()
 
     def dicom_element(self, items):
-        return items[0]
+        if 'count_flag' in items:
+            tag_element = items[1]
+            tag_element.count = True
+        else:
+            tag_element = items[0]
+        return tag_element
+
+    def count_flag(self, items):
+        return "count_flag"
 
     def dicom_element_tag_code(self, items):
         return DicomTag("".join(items))
