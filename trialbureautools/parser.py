@@ -185,10 +185,51 @@ class FolderSeparator(DicomPathElement):
         return os.sep
 
 
-class DicomTag(DicomPathElement):
+class VariableElement(DicomPathElement):
+    """An element which can have different names according to which file you resolve it with.
+
+    """
+
+    def __init__(self, count=False):
+        """
+
+        Parameters
+        ----------
+        count: Bool, Optional
+            False indicates that the string representation for this element should just be the actual value
+            True indicates that each unique value should be numbered instead
+            defaults to False
+
+        Notes
+        -----
+        The count parameter only makes sense when this element is resolved in the context of multiple files. The
+        parameter is only an indication for more higher level methods.
+
+        Example:
+        3 files with PatientID:
+        file1 -> 1232353468756
+        file2 -> 1232353468756
+        file3 -> 8893843948798
+
+        With count = False, resolution should yield
+        file1 -> 1232353468756
+        file2 -> 1232353468756
+        file3 -> 8893843948798
+
+        With count = True, resolution should yield
+        file1 -> 1
+        file2 -> 1
+        file3 -> 2
+
+        """
+        self.count = count
+
+
+class DicomTag(VariableElement):
     """A dicom tag like '0010,0020'"""
 
-    def __init__(self, tag_code):
+    def __init__(self, tag_code, count=False):
+        super(DicomTag, self).__init__(count)
         self.tag_code = tag_code
 
     def __str__(self):
@@ -223,9 +264,10 @@ class DicomTag(DicomPathElement):
             raise DicomTagNotFoundException(f"Tag ({self.tag_code}) was not found")
 
 
-class DicomTagName(DicomPathElement):
+class DicomTagName(VariableElement):
     """Tag name like 'PatientID' """
-    def __init__(self, name):
+    def __init__(self, name, count=False):
+        super(DicomTagName, self).__init__(count)
         self.name = name
 
     def __str__(self):
