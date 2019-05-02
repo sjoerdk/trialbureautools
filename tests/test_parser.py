@@ -28,7 +28,7 @@ def test_path_element_resolution(some_dicom_files, element, resolved):
     """Items that should resolve without problems"""
 
     ds = pydicom.dcmread(str(some_dicom_files[0]))
-    assert element.resolve(ds) == resolved
+    assert element.resolve(ds).resolved_value == resolved
 
 
 @pytest.mark.parametrize('element',
@@ -76,7 +76,9 @@ def test_dicom_path_parse_exceptions(pattern):
 def test_dicom_path_parse(pattern):
     """Patterns that should be accepted and not raise exceptions"""
 
-    _ = DicomPathPattern(pattern)
+    pattern = DicomPathPattern(pattern)
+    for element in pattern.elements:
+        assert element.is_valid()
 
 
 def test_dicom_path_parse_detail():

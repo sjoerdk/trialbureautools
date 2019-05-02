@@ -15,10 +15,11 @@ class DicomPathPatternParser:
                             string_literal: STRING_LITERAL                       
                             dicom_element: "(" count_flag? (dicom_element_tag_name | dicom_element_tag_code) ")"
                             dicom_element_tag_name: LETTER+
-                            dicom_element_tag_code: HEXDIGIT~4 "," HEXDIGIT~4
+                            dicom_element_tag_code: HEXDIGIT~4 COMMA HEXDIGIT~4
                             folder_separator:"/"|"\\"
                             count_flag: "count:"
                             STRING_LITERAL: (LETTER|"_"|"-"|"+"|DIGIT)+
+                            COMMA: ","
                             
                             
                             %import common.LETTER -> LETTER 
@@ -137,7 +138,7 @@ class DicomPathElement:
 
         Returns
         -------
-        str
+        ResolvedPathElement
 
         Raises
         ------
@@ -145,7 +146,11 @@ class DicomPathElement:
             If anything goes wrong when resolving
 
         """
-        raise NotImplemented
+        raise NotImplemented()
+
+    def is_valid(self):
+        """Does this tag make sense, is it a valid DICOM tag, etc."""
+        raise NotImplemented()
 
 
 class StringLiteral(DicomPathElement):
@@ -166,10 +171,14 @@ class StringLiteral(DicomPathElement):
 
         Returns
         -------
-        str
+        ResolvedPathElement
 
         """
-        return self.content
+        return ResolvedPathElement(path_element=self, resolved_value=self.content)
+
+    def is_valid(self):
+        """String literal is always valid. And always literal"""
+        return True
 
 
 class FolderSeparator(DicomPathElement):
@@ -191,7 +200,10 @@ class FolderSeparator(DicomPathElement):
             path separator for current os
 
         """
-        return os.sep
+        return ResolvedPathElement(path_element=self, resolved_value=os.sep)
+
+    def is_valid(self):
+        return True
 
 
 class VariableElement(DicomPathElement):
@@ -268,7 +280,8 @@ class DicomTag(VariableElement):
         if not self.is_valid():
             raise DicomTagResolutionException(f"Tag ({self.tag_code}) is not valid. Should be xxxx,xxxx ")
         try:
-            return ds[self.tag_code[0:4], self.tag_code[5:9]].value
+            tag_value = ds[self.tag_code[0:4], self.tag_code[5:9]].value
+            return ResolvedPathElement(path_element=self, resolved_value=tag_value)
         except KeyError:
             raise DicomTagNotFoundException(f"Tag ({self.tag_code}) was not found")
 
@@ -305,9 +318,39 @@ class DicomTagName(VariableElement):
         if not self.is_valid():
             raise DicomTagResolutionException(f"I don't know tag ({self.name})")
         try:
-            return ds[tag_for_keyword(self.name)].value
+            tag_value = ds[tag_for_keyword(self.name)].value
+            return ResolvedPathElement(path_element=self, resolved_value=tag_value)
         except KeyError:
-            raise DicomTagResolutionException(f"Tag ({self.name}) was not found")
+            raise DicomTagNotFoundException(f"Tag ({self.name}) was not found")
+
+
+class ResolvedPathElement:
+
+    def __init__(self, path_element, resolved_value):
+        """Resolved element, because sometimes you need to check the original path element to change the resolved value
+        For instance when path_element.count =  True
+
+        Parameters
+        ----------
+        path_element: DicomPathElement
+            The original element
+        resolved_value: str
+            the value that this element was resolved to
+
+
+        """
+        self.path_element = path_element
+        self.resolved_value = resolved_value
+
+    def __str__(self):
+        return f"{self.path_element} -> {self.resolved_value}"
+
+    def count(self):
+        """Does this path element indicate renaming by counting unique items?"""
+        if hasattr(self.path_element, 'count'):
+            return self.path_element.count
+        else:
+            return False
 
 
 class DicomPathParseException(Exception):
