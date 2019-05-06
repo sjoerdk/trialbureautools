@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import os
 from pathlib import Path
 
 import pytest
@@ -46,8 +47,8 @@ def test_dicom_sort(some_dicom_files):
     )
     mapped = sorter.map(some_dicom_files).as_flat_dict()
     assert set(mapped.values()) == {
-        "300034001/thing/1.3.6.1.4.1.25403.345051766658.5228.20160418093524.118",
-        "282497552115908864921858108877181315664/thing/1.3.6.1.4.1.14519.5.2.1.9999.9999.100715157022399267532658753333",
+        os.sep.join(["300034001", "thing", "1.3.6.1.4.1.25403.345051766658.5228.20160418093524.118"]),
+        os.sep.join(["282497552115908864921858108877181315664", "thing" ,"1.3.6.1.4.1.14519.5.2.1.9999.9999.100715157022399267532658753333"]),
     }
 
 
