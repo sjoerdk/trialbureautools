@@ -51,12 +51,11 @@ def test_dicom_sort(some_dicom_files):
     }
 
 
-def test_dicom_sort_count(some_more_dicom_files):
-    """ Check the count functionality, which will replace a variable part of the pattern with a number based
-    on the number of unique elements int that folder"""
+def test_dicom_mapped_as_tree(some_more_dicom_files):
+    """ Check mapping of tentative paths as tree"""
 
     pattern = DicomPathPattern(
-        "(PatientID)/(0008,0060)-study(count:StudyDescription)/(SeriesDescription)/(count:SOPInstanceUID)"
+        "(PatientID)/(0008,0060)-study(StudyDescription)/(SeriesDescription)/(SOPInstanceUID)"
     )
     sorter = PathMapper(PathGenerator(pattern))
     mapped = sorter.map(some_more_dicom_files)
@@ -65,6 +64,21 @@ def test_dicom_sort_count(some_more_dicom_files):
     mapped_flat = mapped.as_flat_dict()
     for key in mapped_flat.keys():
         assert mapped_flat[key] == tree_flat[key]
+
+
+def test_dicom_sort_count(some_more_dicom_files):
+    """ Check the count functionality, which will replace a variable part of the pattern with a number based
+    on the number of unique elements int that folder"""
+
+    pattern = DicomPathPattern(
+        "(PatientID)/(0008,0060)-study(count:StudyDescription)/(SeriesDescription)/file(count:SOPInstanceUID)"
+    )
+    sorter = PathMapper(PathGenerator(pattern))
+    tree = sorter.map(some_more_dicom_files).as_tree()
+    tree.apply_count()
+    mapping = tree.as_flat_dict()
+
+    test = 1
 
 
 

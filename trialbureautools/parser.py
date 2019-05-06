@@ -245,6 +245,10 @@ class VariableElement(DicomPathElement):
         """
         self.count = count
 
+    @staticmethod
+    def clean_string(string_in):
+        return string_in.strip().replace(" ", "_")
+
 
 class DicomTag(VariableElement):
     """A dicom tag like '0010,0020'"""
@@ -281,6 +285,7 @@ class DicomTag(VariableElement):
             raise DicomTagResolutionException(f"Tag ({self.tag_code}) is not valid. Should be xxxx,xxxx ")
         try:
             tag_value = ds[self.tag_code[0:4], self.tag_code[5:9]].value
+            tag_value = self.clean_string(tag_value)
             return ResolvedPathElement(path_element=self, resolved_value=tag_value)
         except KeyError:
             raise DicomTagNotFoundException(f"Tag ({self.tag_code}) was not found")
@@ -319,6 +324,7 @@ class DicomTagName(VariableElement):
             raise DicomTagResolutionException(f"I don't know tag ({self.name})")
         try:
             tag_value = ds[tag_for_keyword(self.name)].value
+            tag_value = self.clean_string(tag_value)
             return ResolvedPathElement(path_element=self, resolved_value=tag_value)
         except KeyError:
             raise DicomTagNotFoundException(f"Tag ({self.name}) was not found")
