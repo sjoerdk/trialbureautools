@@ -204,6 +204,48 @@ class StraightPathMapper(PathMapper):
 
         return mapping
 
+
+class FullPathMapper(PathMapper):
+    """Maps old paths to new paths given a certain pattern. Does counting of countable elements and raises errors
+    for potential overwriting and paths that would be too long for windows
+
+    """
+
+    def __init__(self, generator):
+        """
+
+        Parameters
+        ----------
+        generator: PathGenerator
+        """
+        super(FullPathMapper, self).__init__(generator)
+
+    def map(self, paths):
+        """
+
+        Parameters
+        ----------
+        paths: List[Path]
+
+        Returns
+        -------
+        PathTreeMapping
+
+        """
+        straight_mapper = StraightPathMapper(self.generator)
+        mapped = straight_mapper.map(paths)
+        tree = mapped.as_tree()
+        tree.apply_count()
+        overlapping = tree.get_overlapping()
+
+        if overlapping:
+            msg = f"There were {len(overlapping.keys())} cases where files would be overwritten. Showing output " \
+                f"paths followed by all original paths mapping to that path: {overlapping}"
+            raise OverlappingFilePathException(msg)
+
+        return tree
+
+
 class PathUnit:
     """Groups together one or more path elements into a single folder or file name
 
@@ -533,4 +575,14 @@ class PathGeneratorException(Exception):
 
 
 class PathCountException(Exception):
+    pass
+
+
+class MappingWarning(Exception):
+    pass
+
+class OverlappingFilePathException(MappingWarning):
+    pass
+
+class PathTooLongForWindowsException(MappingWarning):
     pass

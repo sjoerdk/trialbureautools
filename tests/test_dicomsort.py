@@ -11,7 +11,7 @@ from trialbureautools.dicomsort import (
     DicomPathPattern,
     DicomPathPatternException,
     split_list,
-)
+    FullPathMapper)
 from trialbureautools.parser import (
     FolderSeparator,
     DicomTag,
@@ -94,8 +94,17 @@ def test_dicom_sort_overlapping_filenames_warning(some_more_dicom_files):
     sorter = StraightPathMapper(PathGenerator(pattern))
     tree = sorter.map(some_more_dicom_files).as_tree()
     tree.apply_count()
-    overlapping =  tree.get_overlapping()
+    overlapping = tree.get_overlapping()
     assert len(overlapping) == 2
+
+
+def test_full_path_mapper(some_more_dicom_files):
+    pattern = DicomPathPattern(
+        "(PatientID)/(0008,0060)-study(count:StudyDescription)/(SeriesDescription)/file(count:SOPInstanceUID)"
+    )
+    mapper = FullPathMapper(PathGenerator(pattern))
+    tree = mapper.map(some_more_dicom_files)
+    test =1
 
 
 def test_split_list():
