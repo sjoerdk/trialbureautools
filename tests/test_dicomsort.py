@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 from tests import RESOURCE_PATH
 from trialbureautools.dicomsort import (
-    PathMapper,
+    StraightPathMapper,
     PathGenerator,
     DicomPathPattern,
     DicomPathPatternException,
@@ -38,11 +38,11 @@ def test_dicom_sort(some_dicom_files):
     """ Check whether files are mapped to expected new locations"""
 
     # map all files to a single string, bit silly, but possible
-    sorter = PathMapper(PathGenerator(DicomPathPattern("kees")))
+    sorter = StraightPathMapper(PathGenerator(DicomPathPattern("kees")))
     mapped = sorter.map(some_dicom_files).as_flat_dict()
     assert set(mapped.values()) == {"kees"}
 
-    sorter = PathMapper(
+    sorter = StraightPathMapper(
         PathGenerator(DicomPathPattern("(PatientID)/thing/(SOPInstanceUID)"))
     )
     mapped = sorter.map(some_dicom_files).as_flat_dict()
@@ -58,7 +58,7 @@ def test_dicom_mapped_as_tree(some_more_dicom_files):
     pattern = DicomPathPattern(
         "(PatientID)/(0008,0060)-study(StudyDescription)/(SeriesDescription)/(SOPInstanceUID)"
     )
-    sorter = PathMapper(PathGenerator(pattern))
+    sorter = StraightPathMapper(PathGenerator(pattern))
     mapped = sorter.map(some_more_dicom_files)
     tree = mapped.as_tree()
     tree_flat = tree.as_flat_dict()
@@ -74,13 +74,28 @@ def test_dicom_sort_count(some_more_dicom_files):
     pattern = DicomPathPattern(
         "(PatientID)/(0008,0060)-study(count:StudyDescription)/(SeriesDescription)/file(count:SOPInstanceUID)"
     )
-    sorter = PathMapper(PathGenerator(pattern))
+    sorter = StraightPathMapper(PathGenerator(pattern))
     tree = sorter.map(some_more_dicom_files).as_tree()
     tree.apply_count()
     mapping = tree.as_flat_dict()
+    final = sorted(list(mapping.values()))
+    assert final[0] == os.sep.join(["test0430", "CT-study0", "2.0", "file0"])
+    assert final[6] == os.sep.join(["test0430", "CT-study0", "AiCE_3.000_CE", "file04"])
 
-    test = 1
 
+def test_dicom_sort_overlapping_filenames_warning(some_more_dicom_files):
+    """ When path mapping is not specific enough it is very well possible that multiple files are mapped to
+    the location. Files should never be overwritten, so this is an error """
+
+
+    pattern = DicomPathPattern(
+        "(PatientID)/(0008,0060)-study(count:StudyDescription)/(SeriesDescription)/file"
+    )
+    sorter = StraightPathMapper(PathGenerator(pattern))
+    tree = sorter.map(some_more_dicom_files).as_tree()
+    tree.apply_count()
+    overlapping =  tree.get_overlapping()
+    assert len(overlapping) == 2
 
 
 def test_split_list():

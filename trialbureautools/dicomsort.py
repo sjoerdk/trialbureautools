@@ -9,8 +9,13 @@ from pathlib import Path
 import pydicom
 from pydicom.errors import InvalidDicomError
 
-from trialbureautools.parser import DicomPathPatternParser, DicomPathParseException, DicomTagNotFoundException, \
-    ResolvedPathElement, FolderSeparator
+from trialbureautools.parser import (
+    DicomPathPatternParser,
+    DicomPathParseException,
+    DicomTagNotFoundException,
+    ResolvedPathElement,
+    FolderSeparator,
+)
 
 
 class DicomPathPattern:
@@ -47,8 +52,9 @@ class PathGenerator:
     """Describes how to generate paths for DICOM files
 
     """
+
     # if a tag value is not in a file, use this string instead
-    UNKNOWN_ELEMENT_NAME = 'UNKNOWN'
+    UNKNOWN_ELEMENT_NAME = "UNKNOWN"
 
     def __init__(self, pattern):
         """
@@ -87,11 +93,17 @@ class PathGenerator:
             try:
                 resolved.append(path_element.resolve(ds))
             except DicomTagNotFoundException:
-                resolved.append(ResolvedPathElement(path_element=None, resolved_value=self.UNKNOWN_ELEMENT_NAME))
+                resolved.append(
+                    ResolvedPathElement(
+                        path_element=None, resolved_value=self.UNKNOWN_ELEMENT_NAME
+                    )
+                )
 
         # group path elements by full folder or file name
         units = []
-        for group in split_list(resolved, lambda x: type(x.path_element) == FolderSeparator):
+        for group in split_list(
+            resolved, lambda x: type(x.path_element) == FolderSeparator
+        ):
             units.append(PathUnit(group))
 
         return TentativePath(units)
@@ -132,21 +144,15 @@ def split_list(list_in, separator_func):
 
 
 class PathMapper:
-    """Maps old paths to new paths given a certain pattern
+    """Maps old paths to new paths given a generator
 
     """
 
     def __init__(self, generator):
-        """
-
-        Parameters
-        ----------
-        generator: PathGenerator
-        """
         self.generator = generator
 
     def map(self, paths):
-        """
+        """For each path in paths, generate a new path
 
         Parameters
         ----------
@@ -157,7 +163,37 @@ class PathMapper:
         PathMapping
 
         """
-        mapping = PathMapping()
+        raise NotImplementedError()
+
+
+class StraightPathMapper(PathMapper):
+    """Maps old paths to new paths given a certain pattern. Maps in a straight way without counting or checking
+    duplicates
+
+    """
+
+    def __init__(self, generator):
+        """
+
+        Parameters
+        ----------
+        generator: PathGenerator
+        """
+        super(StraightPathMapper, self).__init__(generator)
+
+    def map(self, paths):
+        """
+
+        Parameters
+        ----------
+        paths: List[Path]
+
+        Returns
+        -------
+        StraightPathMapping
+
+        """
+        mapping = StraightPathMapping()
         paths_ignored_dicom_error = []
         for path in paths:
             try:
@@ -167,7 +203,6 @@ class PathMapper:
                 paths_ignored_dicom_error.append(path)
 
         return mapping
-
 
 class PathUnit:
     """Groups together one or more path elements into a single folder or file name
@@ -288,6 +323,7 @@ class TentativePath:
     """A path that can still retains the elements that generate it so it can be changed easily
 
     """
+
     def __init__(self, units):
         """
 
@@ -315,6 +351,37 @@ class TentativePath:
 
 
 class PathMapping(UserDict):
+
+    def get_overlapping(self):
+        """Check whether there are files that map to the same location. If so, return a list of original files mapping
+         to the same location
+
+         Returns
+         -------
+         Dict[str, List[]]
+            For each group of orginal files mapping to the same output file, that file and the list of original files.
+         """
+
+        mapping = self.as_flat_dict()
+        reverse_mapping = defaultdict(list)
+        for key, value in mapping.items():
+            reverse_mapping[value].append(key)
+
+        duplicate_maps = {x: y for x, y in reverse_mapping.items() if len(y) > 1}
+        return duplicate_maps
+
+    def as_flat_dict(self):
+        """Flatten the resolved elements to string for each mapped file path
+
+        Returns
+        -------
+        Dict[Path:str]
+
+        """
+        raise NotImplementedError()
+
+
+class StraightPathMapping(PathMapping):
     """A dictionary-like object mapping from each input path to each potential output path
 
     Dict[Path:TentativePath]
@@ -353,7 +420,7 @@ class PathMapping(UserDict):
         return tree_mapping
 
 
-class PathTreeMapping(UserDict):
+class PathTreeMapping(PathMapping):
     """A dictionary-like object mapping from each input path to each potential
 
     Dict[Path:TentativePath]
@@ -384,7 +451,9 @@ class PathTreeMapping(UserDict):
         """
         flat = {}
         for path, end_node in self.data.items():
-            all_nodes_for_path = end_node.get_all_parent_elements()[1:]  # discard empty root node
+            all_nodes_for_path = end_node.get_all_parent_elements()[
+                1:
+            ]  # discard empty root node
             flat[path] = os.sep.join([x.flatten() for x in all_nodes_for_path])
         return flat
 
@@ -436,13 +505,24 @@ class PathTreeMapping(UserDict):
             for elementlist in path_elements_for_all_children.values():
                 if elementlist[0].count():  # this element should be counted
                     # create mapping of unique values to count
-                    mapping = {org: str(idx) for idx, org in enumerate(set([x.resolved_value for x in elementlist]))}
+                    # string_length: use 0,1,2,.. for up to 9 values, use 00,01,02,.. for up to 99, etc..
+                    string_length = len(str(len(elementlist)))
+                    mapping = {
+                        org: format(idx, "0" + str(string_length))
+                        for idx, org in enumerate(
+                            set([x.resolved_value for x in elementlist])
+                        )
+                    }
                     for element in elementlist:
                         element.resolved_value = mapping[element.resolved_value]
 
         # make PathTreeMapping of each child and repeat
         for child in node.children:
             self.apply_count(child)
+
+    def as_tree(self):
+        return self
+
 
 class DicomPathPatternException(Exception):
     pass
