@@ -1,3 +1,8 @@
+"""Parser for path patterns. Parses patterns like "/tmp/(PatientID)/file(count:SopClassInstanceUID)" into relevant
+pieces.
+
+"""
+
 import os
 import re
 

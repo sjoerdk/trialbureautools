@@ -1,14 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from os import listdir
-from os.path import isfile
 
 import pydicom
 import pytest
 from tests import RESOURCE_PATH
-from trialbureautools.dicomsort import DicomPathPatternException, DicomPathPattern
+from dicomsort.core import DicomPathPatternException, DicomPathPattern
 
-from trialbureautools.parser import DicomTag, DicomTagName, StringLiteral, DicomTagResolutionException, FolderSeparator
+from dicomsort.parser import DicomTag, DicomTagName, StringLiteral, DicomTagResolutionException, FolderSeparator
 
 
 @pytest.fixture

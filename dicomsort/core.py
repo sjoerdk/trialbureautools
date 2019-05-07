@@ -9,7 +9,7 @@ from pathlib import Path
 import pydicom
 from pydicom.errors import InvalidDicomError
 
-from trialbureautools.parser import (
+from dicomsort.parser import (
     DicomPathPatternParser,
     DicomPathParseException,
     DicomTagNotFoundException,
@@ -143,112 +143,11 @@ def split_list(list_in, separator_func):
     return split
 
 
-class PathMapper:
-    """Maps old paths to new paths given a generator
-
-    """
-
-    def __init__(self, generator):
-        self.generator = generator
-
-    def map(self, paths):
-        """For each path in paths, generate a new path
-
-        Parameters
-        ----------
-        paths: List[Path]
-
-        Returns
-        -------
-        PathMapping
-
-        """
-        raise NotImplementedError()
-
-
-class StraightPathMapper(PathMapper):
-    """Maps old paths to new paths given a certain pattern. Maps in a straight way without counting or checking
-    duplicates
-
-    """
-
-    def __init__(self, generator):
-        """
-
-        Parameters
-        ----------
-        generator: PathGenerator
-        """
-        super(StraightPathMapper, self).__init__(generator)
-
-    def map(self, paths):
-        """
-
-        Parameters
-        ----------
-        paths: List[Path]
-
-        Returns
-        -------
-        StraightPathMapping
-
-        """
-        mapping = StraightPathMapping()
-        paths_ignored_dicom_error = []
-        for path in paths:
-            try:
-                new_path = self.generator.generate(path)
-                mapping[path] = new_path
-            except PathGeneratorException:
-                paths_ignored_dicom_error.append(path)
-
-        return mapping
-
-
-class FullPathMapper(PathMapper):
-    """Maps old paths to new paths given a certain pattern. Does counting of countable elements and raises errors
-    for potential overwriting and paths that would be too long for windows
-
-    """
-
-    def __init__(self, generator):
-        """
-
-        Parameters
-        ----------
-        generator: PathGenerator
-        """
-        super(FullPathMapper, self).__init__(generator)
-
-    def map(self, paths):
-        """
-
-        Parameters
-        ----------
-        paths: List[Path]
-
-        Returns
-        -------
-        PathTreeMapping
-
-        """
-        straight_mapper = StraightPathMapper(self.generator)
-        mapped = straight_mapper.map(paths)
-        tree = mapped.as_tree()
-        tree.apply_count()
-        overlapping = tree.get_overlapping()
-
-        if overlapping:
-            msg = f"There were {len(overlapping.keys())} cases where files would be overwritten. Showing output " \
-                f"paths followed by all original paths mapping to that path: {overlapping}"
-            raise OverlappingFilePathException(msg)
-
-        return tree
-
-
 class PathUnit:
     """Groups together one or more path elements into a single folder or file name
 
+    So in a pattern like ../(PatientID)folder(Modality)/... there are three elements: PatientID, folder and Modality,
+    but together they determine the name of a single folder. Hence they are one Unit.
     """
 
     def __init__(self, path_elements):
@@ -581,8 +480,10 @@ class PathCountException(Exception):
 class MappingWarning(Exception):
     pass
 
+
 class OverlappingFilePathException(MappingWarning):
     pass
+
 
 class PathTooLongForWindowsException(MappingWarning):
     pass
