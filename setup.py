@@ -39,7 +39,7 @@ setup(
     include_package_data=True,
     keywords='trialbureautools',
     name='trialbureautools',
-    packages=find_packages(include=['trialbureautools']),
+    packages=find_packages(include=['trialbureautools', 'dicomsort']),
     setup_requires=setup_requirements,
     test_suite='tests',
     tests_require=test_requirements,

@@ -1,8 +1,10 @@
 """A mapper takes a list of files and generates new paths for each one, given a certain pattern
 
 """
+import os
+
 from dicomsort.core import StraightPathMapping, PathGeneratorException, OverlappingFilePathException, \
-    PathTooLongForWindowsException
+    PathTooLongForWindowsException, DicomPathPattern, PathGenerator
 
 
 class PathMapper:
@@ -75,18 +77,25 @@ class FullPathMapper(PathMapper):
 
     WINDOWS_PATH_LENGTH_LIMIT = 260
 
-    def __init__(self, generator, check_path_lengths=True):
+    def __init__(self, pattern, root_path=None, check_path_lengths=True):
         """
 
         Parameters
         ----------
-        generator: PathGenerator
-            Generate path for each file with this generator.
+        pattern: str
+            Path pattern string to generate new paths with
+        root_path: str, optional
+            Prepend this path to all generated paths. Defaults to None, which means paths will be generated exactly
+            as described in pattern
         check_path_lengths: str, optional
             If true, raise exception if any mapped path is longer then windows max path length. defaults to True
 
         """
-        super(FullPathMapper, self).__init__(generator)
+        self.root_path = root_path
+        if self.root_path:
+            pattern = os.path.normpath(self.root_path + os.sep + pattern)
+        super(FullPathMapper, self).__init__(PathGenerator(DicomPathPattern(pattern)))
+
         self.check_path_lengths = check_path_lengths
 
     def map(self, paths):

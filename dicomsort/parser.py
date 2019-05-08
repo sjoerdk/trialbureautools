@@ -15,12 +15,13 @@ class DicomPathPatternParser:
     def __init__(self):
         self.parser = Lark(
             r"""                
-                            dicom_path_pattern: element+ 
+                            dicom_path_pattern: root_slash? element+ 
                             element: dicom_element|string_literal|folder_separator
                             string_literal: STRING_LITERAL                       
                             dicom_element: "(" count_flag? (dicom_element_tag_name | dicom_element_tag_code) ")"
                             dicom_element_tag_name: LETTER+
                             dicom_element_tag_code: HEXDIGIT~4 COMMA HEXDIGIT~4
+                            root_slash.2:"/"
                             folder_separator:"/"|"\\"
                             count_flag: "count:"
                             STRING_LITERAL: (LETTER|"_"|"-"|"+"|DIGIT)+
@@ -107,6 +108,9 @@ class DicomPathPatternTransformer(Transformer):
 
     def element(self, items):
         return items[0]
+
+    def root_slash(self, items):
+        return RootSlash()
 
     def string_literal(self, items):
         return StringLiteral("".join(items))
@@ -206,6 +210,31 @@ class FolderSeparator(DicomPathElement):
 
         """
         return ResolvedPathElement(path_element=self, resolved_value=os.sep)
+
+    def is_valid(self):
+        return True
+
+
+class RootSlash(DicomPathElement):
+    """The first slash in a unix path. Denoting this path starts at root"""
+
+    def __str__(self):
+        return os.sep
+
+    def resolve(self, ds):
+        """No resolving, just return literal string
+
+        Parameters
+        ----------
+        ds: pydicom Dataset
+
+        Returns
+        -------
+        str:
+            path separator for current os
+
+        """
+        return ResolvedPathElement(path_element=self, resolved_value="/")
 
     def is_valid(self):
         return True

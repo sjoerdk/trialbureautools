@@ -101,6 +101,7 @@ class PathGenerator:
 
         # group path elements by full folder or file name
         units = []
+
         for group in split_list(
             resolved, lambda x: type(x.path_element) == FolderSeparator
         ):
@@ -156,6 +157,7 @@ class PathUnit:
         Parameters
         ----------
         path_elements: List[ResolvedPathElement]
+            list of path elements in this unit
         """
         self.path_elements = path_elements
 
