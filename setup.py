@@ -30,7 +30,7 @@ setup(
     description="Command line utilities for the radboudumc trial bureau",
     entry_points={
         'console_scripts': [
-            'tbt=trialbureautools.cli:cli',
+            'tbt=trialbureautools.cli.main:cli',
         ],
     },
     install_requires=requirements,

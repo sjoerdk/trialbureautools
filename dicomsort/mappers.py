@@ -3,8 +3,7 @@
 """
 import os
 
-from dicomsort.core import StraightPathMapping, PathGeneratorException, OverlappingFilePathException, \
-    PathTooLongForWindowsException, DicomPathPattern, PathGenerator
+from dicomsort.core import StraightPathMapping, PathGeneratorException, DicomPathPattern, PathGenerator
 
 
 class PathMapper:
@@ -93,13 +92,13 @@ class FullPathMapper(PathMapper):
         """
         self.root_path = root_path
         if self.root_path:
-            pattern = os.path.normpath(self.root_path + os.sep + pattern)
+            pattern = os.path.normpath(str(self.root_path) + os.sep + pattern)
         super(FullPathMapper, self).__init__(PathGenerator(DicomPathPattern(pattern)))
 
         self.check_path_lengths = check_path_lengths
 
     def map(self, paths):
-        """
+        """Map each path to its output path. Check for several potential problems
 
         Parameters
         ----------
@@ -107,11 +106,15 @@ class FullPathMapper(PathMapper):
 
         Raises
         ------
-        OverlappingFilePathException:
+        OverlappingFilePathException(MappingException):
             When mapped paths overlap, which would cause existing files to be overwritten
 
-        PathTooLongForWindowsException:
+        PathTooLongForWindowsException(MappingException):
             When any path is longer then windows max file path length. Raised only if self.check_path_lengths = True
+
+        UnsafeMappingException(MappingException):
+            When any of the output paths equals any of the input paths. This means executing this mapping would
+            overwrite part of the input
 
         Returns
         -------
@@ -129,12 +132,35 @@ class FullPathMapper(PathMapper):
                 f"paths followed by all original paths mapping to that path: {overlapping}"
             raise OverlappingFilePathException(msg)
 
+        flat = tree.as_flat_dict()
+        for original, mapped in flat.items():
+            if mapped in flat.keys():
+                msg = f"mapping {str(original)} -> {str(mapped)} maps to a file in the input files. Exectuting this" \
+                      f"mapping would corrupt the input files"
+                raise UnsafeMappingException(msg)
+
         if self.check_path_lengths:
             problematic_in_windows = {x: y for x, y in tree.as_flat_dict().items() if
-                                      len(y) > self.WINDOWS_PATH_LENGTH_LIMIT}
+                                      len(str(y)) > self.WINDOWS_PATH_LENGTH_LIMIT}
             if problematic_in_windows:
                 msg = f"Mapping contains {len(problematic_in_windows)} paths that are longer then" \
                     f" {self.WINDOWS_PATH_LENGTH_LIMIT} characters. This might cause problems in certain windows systems"
                 raise PathTooLongForWindowsException(msg)
 
         return tree
+
+
+class MappingException(Exception):
+    pass
+
+
+class UnsafeMappingException(MappingException):
+    pass
+
+
+class OverlappingFilePathException(MappingException):
+    pass
+
+
+class PathTooLongForWindowsException(MappingException):
+    pass

@@ -7,10 +7,9 @@ import pytest
 from tests import RESOURCE_PATH
 from dicomsort.core import (
     PathGenerator,
-    DicomPathPattern,
-    OverlappingFilePathException,
-    PathTooLongForWindowsException)
-from dicomsort.mappers import StraightPathMapper, FullPathMapper
+    DicomPathPattern)
+from dicomsort.mappers import StraightPathMapper, FullPathMapper, UnsafeMappingException, OverlappingFilePathException, \
+    PathTooLongForWindowsException
 
 
 @pytest.fixture
@@ -64,8 +63,8 @@ def test_full_path_mapper(some_more_dicom_files):
     mapper = FullPathMapper(pattern=pattern)
     tree = mapper.map(some_more_dicom_files)
     final = sorted(list(tree.as_flat_dict().values()))
-    assert final[1] == os.sep.join(["test0430", "CT-study0", "2.0", "file1"])
-    assert final[7] == os.sep.join(["test0430", "CT-study0", "AiCE_3.000_CE", "file05"])
+    assert str(final[1]) == os.sep.join(["test0430", "CT-study0", "2.0", "file1"])
+    assert str(final[7]) == os.sep.join(["test0430", "CT-study0", "AiCE_3.000_CE", "file05"])
 
     silly_mapper = FullPathMapper(pattern="(PatientID)")
     with pytest.raises(OverlappingFilePathException):
@@ -81,13 +80,20 @@ def test_full_path_mapper_path_limit(some_more_dicom_files):
         mapper.map(some_more_dicom_files)
 
 
+def test_full_path_mapper_unsafe_mapping(some_dicom_files):
+    pattern = "adicomdir/folder1/file(count:SOPInstanceUID).dcm"
+    mapper = FullPathMapper(pattern=pattern, root_path=RESOURCE_PATH)
+    with pytest.raises(UnsafeMappingException):
+        mapper.map(some_dicom_files[1:3])
+
+
 def test_full_path_mapper_with_root(some_more_dicom_files):
 
     pattern = "(PatientID)/(0008,0060)-study(count:StudyDescription)/(SeriesDescription)/file(count:SOPInstanceUID)"
     mapper = FullPathMapper(pattern=pattern, root_path="/tmp/folder/something/")
     mapped = mapper.map(some_more_dicom_files)
     for path in mapped.as_flat_dict().values():
-        assert path.startswith("/tmp/folder/something/")
+        assert str(path).startswith("/tmp/folder/something/")
 
 
 def test_dicom_sort_count(some_more_dicom_files):

@@ -40,6 +40,7 @@ class DicomPathPattern:
         DicomPathPatternException:
             If pattern_string cannot be parsed to a list of strings and valid dicom tags
         """
+        self.pattern_string = pattern_string
         try:
             parsed = DicomPathPatternParser().parse(pattern_string)
         except DicomPathParseException as e:
@@ -318,14 +319,36 @@ class PathMapping(UserDict):
 
         Returns
         -------
-        Dict[Path:str]
+        Dict[Path:Path]
 
         """
         raise NotImplementedError()
 
 
+class UserPathMapping(PathMapping):
+    """A simple mapping that can be created without any parsing. Internally holds only a flat dict Path:Path
+
+    """
+
+    def __init__(self, mapping=None):
+        """
+
+        Parameters
+        ----------
+        mapping: Dict[Path:Path]
+            input dict
+        """
+        if not mapping:
+            mapping = {}
+        self.data = mapping
+
+    def as_flat_dict(self):
+        return self.data
+
+
 class StraightPathMapping(PathMapping):
-    """A dictionary-like object mapping from each input path to each potential output path
+    """A dictionary-like object mapping from each input path to TentativePath: a path that retains its elements for
+    easy manipulation later
 
     Dict[Path:TentativePath]
 
@@ -341,12 +364,12 @@ class StraightPathMapping(PathMapping):
 
         Returns
         -------
-        Dict[Path:str]
+        Dict[Path:Path]
 
         """
         flat_dict = {}
         for org_path, tentative_path in self.data.items():
-            flat_dict[org_path] = tentative_path.flatten()
+            flat_dict[org_path] = Path(tentative_path.flatten())
         return flat_dict
 
     def as_tree(self):
@@ -389,7 +412,7 @@ class PathTreeMapping(PathMapping):
 
         Returns
         -------
-        Dict[Path:str]
+        Dict[Path:Path]
 
         """
         flat = {}
@@ -397,7 +420,7 @@ class PathTreeMapping(PathMapping):
             all_nodes_for_path = end_node.get_all_parent_elements()[
                 1:
             ]  # discard empty root node
-            flat[path] = os.sep.join([x.flatten() for x in all_nodes_for_path])
+            flat[path] = Path(os.sep.join([x.flatten() for x in all_nodes_for_path]))
         return flat
 
     def add(self, path):
@@ -476,16 +499,4 @@ class PathGeneratorException(Exception):
 
 
 class PathCountException(Exception):
-    pass
-
-
-class MappingWarning(Exception):
-    pass
-
-
-class OverlappingFilePathException(MappingWarning):
-    pass
-
-
-class PathTooLongForWindowsException(MappingWarning):
     pass

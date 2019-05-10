@@ -24,7 +24,7 @@ class DicomPathPatternParser:
                             root_slash.2:"/"
                             folder_separator:"/"|"\\"
                             count_flag: "count:"
-                            STRING_LITERAL: (LETTER|"_"|"-"|"+"|DIGIT)+
+                            STRING_LITERAL: (LETTER|"_"|"-"|"+"|"."|DIGIT)+
                             COMMA: ","
                             
                             

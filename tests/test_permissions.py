@@ -8,7 +8,7 @@ from unittest.mock import patch, Mock
 from click.testing import CliRunner
 
 from icaclswrap.foldertool import WinFolderPermissionTool
-from trialbureautools.cli import set_folder_permissions, create_idis_output_folder
+from trialbureautools.cli.permissions import set_folder_permissions, create_idis_output_folder
 
 from tests import BASE_PATH
 from trialbureautools.permissions import PermissionsException, IDISOutputFolder

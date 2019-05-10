@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import os
+from pathlib import Path
 
 import pytest
 from tests import RESOURCE_PATH
@@ -32,13 +33,13 @@ def test_dicom_sort(some_dicom_files):
     # map all files to a single string, bit silly, but possible
     sorter = StraightPathMapper(PathGenerator(DicomPathPattern("kees")))
     mapped = sorter.map(some_dicom_files).as_flat_dict()
-    assert set(mapped.values()) == {"kees"}
+    assert set(mapped.values()) == {Path("kees")}
 
     sorter = StraightPathMapper(
         PathGenerator(DicomPathPattern("(PatientID)/thing/(SOPInstanceUID)"))
     )
     mapped = sorter.map(some_dicom_files).as_flat_dict()
-    assert set(mapped.values()) == {
+    assert set([str(x) for x in mapped.values()]) == {
         os.sep.join(
             [
                 "300034001",

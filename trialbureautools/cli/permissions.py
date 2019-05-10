@@ -1,22 +1,8 @@
-# -*- coding: utf-8 -*-
-
-"""Command line interface for trialbureautools. Exposes functions from the 'tools' module. This module should not
-contain important functionality but rather just define the command line interface.
-
-docstrings in this module are displayed by the click CLI so should be user-centered."""
-
-import sys
 from pathlib import Path
 
 import click
 
-from trialbureautools.permissions import set_folder_rights, PERMISSIONS, PermissionsException, IDISOutputFolder
-
-
-@click.group()
-def cli():
-    """Trial bureau scripts"""
-    pass
+from trialbureautools.permissions import PERMISSIONS, set_folder_rights, PermissionsException, IDISOutputFolder
 
 
 @click.command(short_help="Set folder permissions")
@@ -61,10 +47,3 @@ def create_idis_output_folder(base_folder, z_number):
             click.echo(f'Error: { str(e) }')
     else:
         click.echo("cancelled")
-
-
-cli.add_command(set_folder_permissions)
-cli.add_command(create_idis_output_folder)
-
-if __name__ == "__main__":
-    sys.exit(cli())  # pragma: no cover
