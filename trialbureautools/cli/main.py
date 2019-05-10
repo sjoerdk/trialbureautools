@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""Command line interface for trialbureautools
+"""Main command line interface for trialbureautools
 """
 
 from pathlib import Path
@@ -31,8 +31,8 @@ class TrialBureauToolsCLI:
 
         self.sort_cli = DicomSortCLI(self.config_path / "dicom_sort_paths.yaml")
         for command in self.sort_cli.get_click_commands().values():
-            self.sort.add_command(command)
-        self.main.add_command(self.sort)
+            self.sorter.add_command(command)
+        self.main.add_command(self.sorter)
 
 
     @staticmethod
@@ -59,7 +59,7 @@ class TrialBureauToolsCLI:
 
     @staticmethod
     @click.group()
-    def sort():
+    def sorter():
         """Sort DICOM Files based on tag values  """
         pass
 

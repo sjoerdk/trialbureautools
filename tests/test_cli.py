@@ -18,22 +18,31 @@ def mock_click_echo(monkeypatch):
 
 
 @pytest.fixture()
-def test_cli():
+def a_test_cli():
+    """ A CLI that reads its tests from a pre-defined test config
+    """
     return TrialBureauToolsCLI(config_path=RESOURCE_PATH / "tbt_test_config")
 
 
-def test_cli_main(test_cli):
+@pytest.fixture()
+def a_default_cli(tmpdir):
+    """A CLI that has a non-existent file as config. CLI will fill it with default contents"""
+    config_file = Path(tmpdir) / "test_remove_cli_config_file.yaml"
+    return DicomSortCLI(configuration_file=config_file)
+
+
+def test_cli_main(a_test_cli):
     runner = CliRunner()
-    result = runner.invoke(test_cli.main)
+    result = runner.invoke(a_test_cli.main)
     assert result.exit_code == 0
 
 
-def test_cli_main(test_cli):
+def test_cli_main(a_test_cli):
     runner = CliRunner()
-    result = runner.invoke(test_cli.main, ["permissions"])
+    result = runner.invoke(a_test_cli.main, ["permissions"])
     assert result.exit_code == 0
 
-    result = runner.invoke(test_cli.main, ["sort"])
+    result = runner.invoke(a_test_cli.main, ["sorter"])
     assert result.exit_code == 0
 
 
@@ -68,28 +77,30 @@ def test_cli_dicomsort_add_key(tmp_path, mock_click_echo):
     assert list(loaded_patterns.keys()) == ["idis", "nucmed", "test"]
 
 
-def test_cli_dicomsort_remove_key(tmp_path, mock_click_echo):
+def test_cli_dicomsort_remove_key(a_default_cli, mock_click_echo):
     """When loaded with a non-existent config file path, dicomsort CLI should create a default one
     """
-
-    config_file = Path(tmp_path) / "test_remove_cli_config_file.yaml"
-    cli = DicomSortCLI(configuration_file=config_file)
-
     runner = CliRunner()
-    runner.invoke(cli.get_click_commands()["remove_pattern"], ["idis"])
+    runner.invoke(a_default_cli.get_click_commands()["remove_pattern"], ["idis"])
 
-    loaded_patterns = DicomSortCLI(configuration_file=config_file).pattern_list
+    loaded_patterns = DicomSortCLI(
+        configuration_file=a_default_cli.configuration_file
+    ).pattern_list
     assert list(loaded_patterns.keys()) == ["nucmed"]
 
 
-def test_cli_dicomsort_list(tmp_path, mock_click_echo):
+def test_cli_dicomsort_list(a_default_cli, mock_click_echo):
     """When loaded with a non-existent config file path, dicomsort CLI should create a default one
     """
-    cli = DicomSortCLI(
-        configuration_file=Path(tmp_path) / "test_remove_cli_config_file.yaml"
-    )
-
     runner = CliRunner()
-    result = runner.invoke(cli.get_click_commands()["list"])
+    result = runner.invoke(a_default_cli.get_click_commands()["list"])
 
     assert result.exit_code == 0
+
+
+def test_cli_dicomsort_dicomtags(a_default_cli, mock_click_echo):
+    """List all dicomtags
+    """
+    runner = CliRunner()
+    assert runner.invoke(a_default_cli.get_click_commands()["dicomtags"]).exit_code == 0
+    assert runner.invoke(a_default_cli.get_click_commands()["dicomtags"], ["--all"]).exit_code == 0

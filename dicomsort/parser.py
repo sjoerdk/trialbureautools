@@ -8,7 +8,8 @@ import re
 
 from lark import Lark, Transformer
 from lark.exceptions import LarkError
-from pydicom.datadict import tag_for_keyword
+from pydicom.datadict import tag_for_keyword, keyword_dict
+from pydicom.tag import Tag
 
 
 class DicomPathPatternParser:
@@ -71,6 +72,20 @@ class DicomPathPatternParser:
                 )
 
         return transformed
+
+    @staticmethod
+    def valid_dicom_tag_names():
+        """All tag_name - tag pairs that are accepted by this parser. Sorted by tagfrom pydicom.tag import Tag
+
+        Returns
+        -------
+        List[(str,str)]:
+            List of tag name, tag pairs that can be used in the paths for this parser
+            example: ('PatientID', '(0010,0020)')
+
+        """
+
+        return [(x, str(Tag(y)).replace(" ", "")) for x, y in keyword_dict.items()]
 
 
 class DicomPathPatternTransformer(Transformer):

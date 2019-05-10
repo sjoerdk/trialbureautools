@@ -23,6 +23,7 @@ class DicomPathPattern:
     '/some_folder/(PatientID)/(0008,1030)/' is valid
 
     """
+    parser = DicomPathPatternParser
 
     def __init__(self, pattern_string):
         """
@@ -42,7 +43,7 @@ class DicomPathPattern:
         """
         self.pattern_string = pattern_string
         try:
-            parsed = DicomPathPatternParser().parse(pattern_string)
+            parsed = self.parser().parse(pattern_string)
         except DicomPathParseException as e:
             raise DicomPathPatternException(f"Error parsing '{pattern_string}: {e}")
 

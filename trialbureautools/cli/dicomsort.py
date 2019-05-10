@@ -13,6 +13,7 @@ class DicomPathPatterns(UserDict):
 
     Dict[key: pattern_string]
     """
+
     def __init__(self, flat_dict=None):
         """
 
@@ -31,7 +32,7 @@ class DicomPathPatterns(UserDict):
         super(DicomPathPatterns, self).__init__(object_dict)
 
     def save(self, path):
-        with open(path, 'w') as f:
+        with open(path, "w") as f:
             yaml.dump(self.as_flat_dict(), f, default_flow_style=False)
         click.echo(f"Saved patterns to {path}")
 
@@ -46,7 +47,7 @@ class DicomPathPatterns(UserDict):
 
     @classmethod
     def load(cls, path):
-        with open(path, 'r') as f:
+        with open(path, "r") as f:
             flat_dict = yaml.safe_load(f)
         return cls(flat_dict=flat_dict)
 
@@ -68,10 +69,12 @@ class SerializableDicomPathPattern(DicomPathPattern):
     """A DicomPathPattern that can be saved and loaded from and to dict """
 
     def __init__(self, pattern_string):
-        super(SerializableDicomPathPattern, self).__init__(pattern_string=pattern_string)
+        super(SerializableDicomPathPattern, self).__init__(
+            pattern_string=pattern_string
+        )
 
     def as_dict(self):
-        return {'pattern': self.pattern_string}
+        return {"pattern": self.pattern_string}
 
     @staticmethod
     def from_dict(dict_in):
@@ -91,7 +94,6 @@ class SerializableDicomPathPattern(DicomPathPattern):
 
 
 class DicomSortCLI:
-
     def __init__(self, configuration_file: PathLike):
         self.assert_configuration_file(configuration_file)
         self.configuration_file = configuration_file
@@ -108,7 +110,9 @@ class DicomSortCLI:
 
         """
         if not file_path.exists():
-            click.echo(f"Settings file '{file_path}' did not exist. Writing default contents.")
+            click.echo(
+                f"Settings file '{file_path}' did not exist. Writing default contents."
+            )
             DefaultPatternsList().save(file_path)
 
     def save(self):
@@ -124,19 +128,25 @@ class DicomSortCLI:
 
         """
 
-        @click.command()
-        @click.argument('key')
-        @click.argument('pattern_string')
+        @click.command(short_help="Add given pattern and save to file")
+        @click.argument("key")
+        @click.argument("pattern_string")
         def add_pattern(key, pattern_string):
-            """Add given pattern and save to file
+            """Add a DICOM path pattern under a certain key
+
+            Usage: add_pattern <key> <pattern>
+
+            <Key> Should be a short description without spaces. like 'ct' or 'flat' (without the parenthesis).
+
+            <pattern> Should be a valid DICOM path pattern like '/folder/(PatientID)/(count:StudyInstanceUID)' -(again, without parenthesis)
             """
             self.pattern_list.add_pattern(key, pattern_string)
             self.save()
 
-        @click.command()
-        @click.argument('key')
+        @click.command(short_help="Remove given pattern and save to file")
+        @click.argument("key")
         def remove_pattern(key):
-            """remove given pattern and save to file
+            """Remove the pattern by key. To see all keys use the list command
             """
             try:
                 self.pattern_list.pop(key)
@@ -144,23 +154,70 @@ class DicomSortCLI:
             except KeyError:
                 click.echo(f"Key {key} does not exist in this list")
 
-        @click.command()
+        @click.command(short_help="List all patterns")
         def list():
-            """list all patterns """
+            """list all DICOM path patterns"""
             for key, value in self.pattern_list.as_flat_dict().items():
                 click.echo(f"{key}: {value}")
 
-        return {'add_pattern': add_pattern, 'remove_pattern': remove_pattern, 'list': list}
+        @click.command()
+        @click.option(
+            "--all",
+            "a",
+            is_flag=True,
+            default=False,
+            help="Show all 4000+ accepted tags. Else show only most useful",
+        )
+        def dicomtags(a):
+            """list all valid dicomtag names and numbers"""
 
-        
+            most_useful = [
+                "SOPClassUID",
+                "SOPInstanceUID",
+                "StudyDate",
+                "SeriesDate",
+                "AcquisitionDate",
+                "Modality",
+                "PatientID",
+                "PatientName",
+                "DeviceID",
+                "StudyInstanceUID",
+                "SeriesInstanceUID",
+                "StudyID",
+                "SeriesNumber",
+                "InstanceNumber",
+            ]
+
+            all_names = DicomPathPattern.parser.valid_dicom_tag_names()
+            if a:
+                title = f"All {len(all_names)} accepted tags"
+                names = all_names
+            else:
+                title = f'{len(most_useful)} most useful tags. To show all len{len(all_names)} use "dicomtags --all"'
+                names = [(name, tag) for name, tag in all_names if name in most_useful]
+
+            click.echo("-" * len(title))
+            click.echo(title)
+            click.echo("-"*len(title))
+            click.echo("\n".join([f"{x} - {y}" for x, y in names]))
+
+        return {
+            "add_pattern": add_pattern,
+            "remove_pattern": remove_pattern,
+            "list": list,
+            "dicomtags": dicomtags,
+        }
+
+
 class DefaultPatternsList(DicomPathPatterns):
     """A Dicom Patterns list with some default content
 
     """
+
     default_patterns = {
-        'idis': '(0010,0020)/(0008,1030)-(0008,0050)/(0008,103e)-(0008,0060)-(0020,0011)/(count:SOPInstanceUID)',
-        'nucmed': '(0010,0020)/(0008,1030)-(0008,0050)/(0008,0020)/(0008,103e)-(0008,0060)-(0020,0011)'
-                  '/(count:SOPInstanceUID)'
+        "idis": "(0010,0020)/(0008,1030)-(0008,0050)/(0008,103e)-(0008,0060)-(0020,0011)/(count:SOPInstanceUID)",
+        "nucmed": "(0010,0020)/(0008,1030)-(0008,0050)/(0008,0020)/(0008,103e)-(0008,0060)-(0020,0011)"
+        "/(count:SOPInstanceUID)",
     }
 
     def __init__(self):
