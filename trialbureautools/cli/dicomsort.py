@@ -1,5 +1,5 @@
 import collections
-from os import PathLike
+from os import PathLike, path
 
 import click
 import yaml
@@ -47,6 +47,18 @@ class DicomPathPatterns(UserDict):
 
     @classmethod
     def load(cls, path):
+        """
+
+        Parameters
+        ----------
+        path: PathLike
+            Load from this path
+
+        Returns
+        -------
+        DicomPathPatterns
+
+        """
         with open(path, "r") as f:
             flat_dict = yaml.safe_load(f)
         return cls(flat_dict=flat_dict)
@@ -98,6 +110,7 @@ class DicomSortCLI:
         self.assert_configuration_file(configuration_file)
         self.configuration_file = configuration_file
         self.pattern_list = DicomPathPatterns.load(configuration_file)
+        self.active_pattern = None
 
     @staticmethod
     def assert_configuration_file(file_path):
@@ -119,7 +132,7 @@ class DicomSortCLI:
         """Save patterns to file"""
         self.pattern_list.save(self.configuration_file)
 
-    def get_click_commands(self):
+    def get_commands(self):
         """
 
         Returns
@@ -127,6 +140,44 @@ class DicomSortCLI:
         Dict[str, click.command], command_name : click command that can be added with add_command()
 
         """
+
+        @click.command()
+        @click.argument('input_dir', type=click.Path(exists=True))
+        @click.argument('pattern')
+        @click.option('--output_dir', type=click.Path(), help="Write sorted files into the given directory")
+        def sort(input_dir, pattern, output_dir):
+            """Sort all dicom files in given directory
+
+            """
+
+            input_dir_abs = path.abspath(input_dir)
+            pattern = self.pattern_list[pattern]
+            click.echo(f"sorting {input_dir_abs} with {pattern}, writing to {output_dir}")
+
+        return {
+            "sort": sort
+        }
+
+    def get_status_command(self):
+
+        @click.command(short_help='Show current settings')
+        def status(self):
+            self.pattern_string
+
+    def get_admin_commands(self):
+        """
+
+        Returns
+        -------
+        Dict[str, click.command], command_name : click command that can be added with add_command()
+
+        """
+
+        @click.command(short_help="List all patterns")
+        def list():
+            """list all DICOM path patterns"""
+            for key, value in self.pattern_list.as_flat_dict().items():
+                click.echo(f"{key}: {value}")
 
         @click.command(short_help="Add given pattern and save to file")
         @click.argument("key")
@@ -153,12 +204,6 @@ class DicomSortCLI:
                 self.save()
             except KeyError:
                 click.echo(f"Key {key} does not exist in this list")
-
-        @click.command(short_help="List all patterns")
-        def list():
-            """list all DICOM path patterns"""
-            for key, value in self.pattern_list.as_flat_dict().items():
-                click.echo(f"{key}: {value}")
 
         @click.command()
         @click.option(
@@ -204,8 +249,8 @@ class DicomSortCLI:
         return {
             "add_pattern": add_pattern,
             "remove_pattern": remove_pattern,
-            "list": list,
             "dicomtags": dicomtags,
+            "list": list
         }
 
 

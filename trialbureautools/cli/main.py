@@ -30,10 +30,18 @@ class TrialBureauToolsCLI:
         self.permissions.add_command(create_idis_output_folder)
 
         self.sort_cli = DicomSortCLI(self.config_path / "dicom_sort_paths.yaml")
-        for command in self.sort_cli.get_click_commands().values():
+        for command in self.sort_cli.get_commands().values():
             self.sorter.add_command(command)
-        self.main.add_command(self.sorter)
 
+        @click.group()
+        def admin():
+            """Admin options for sorter"""
+            pass
+        self.sorter.add_command(admin)
+        for command in self.sort_cli.get_admin_commands().values():
+            admin.add_command(command)
+
+        self.main.add_command(self.sorter)
 
     @staticmethod
     def assert_path(path: Path):
