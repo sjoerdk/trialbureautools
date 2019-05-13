@@ -110,7 +110,6 @@ class DicomSortCLI:
         self.assert_configuration_file(configuration_file)
         self.configuration_file = configuration_file
         self.pattern_list = DicomPathPatterns.load(configuration_file)
-        self.active_pattern = None
 
     @staticmethod
     def assert_configuration_file(file_path):
@@ -154,24 +153,20 @@ class DicomSortCLI:
             pattern = self.pattern_list[pattern]
             click.echo(f"sorting {input_dir_abs} with {pattern}, writing to {output_dir}")
 
+        @click.group()
+        def pattern():
+            """List, add, delete Dicom Path Patterns"""
+            pass
+
+        for command in self.get_pattern_commands().values():
+            pattern.add_command(command)
+
         return {
-            "sort": sort
+            "sort": sort,
+            "patterns": pattern,
         }
 
-    def get_status_command(self):
-
-        @click.command(short_help='Show current settings')
-        def status(self):
-            self.pattern_string
-
-    def get_admin_commands(self):
-        """
-
-        Returns
-        -------
-        Dict[str, click.command], command_name : click command that can be added with add_command()
-
-        """
+    def get_pattern_commands(self):
 
         @click.command(short_help="List all patterns")
         def list():
@@ -182,10 +177,10 @@ class DicomSortCLI:
         @click.command(short_help="Add given pattern and save to file")
         @click.argument("key")
         @click.argument("pattern_string")
-        def add_pattern(key, pattern_string):
+        def add(key, pattern_string):
             """Add a DICOM path pattern under a certain key
 
-            Usage: add_pattern <key> <pattern>
+            Usage: add <key> <pattern>
 
             <Key> Should be a short description without spaces. like 'ct' or 'flat' (without the parenthesis).
 
@@ -196,7 +191,7 @@ class DicomSortCLI:
 
         @click.command(short_help="Remove given pattern and save to file")
         @click.argument("key")
-        def remove_pattern(key):
+        def remove(key):
             """Remove the pattern by key. To see all keys use the list command
             """
             try:
@@ -213,7 +208,7 @@ class DicomSortCLI:
             default=False,
             help="Show all 4000+ accepted tags. Else show only most useful",
         )
-        def dicomtags(a):
+        def list_dicomtags(a):
             """list all valid dicomtag names and numbers"""
 
             most_useful = [
@@ -243,15 +238,13 @@ class DicomSortCLI:
 
             click.echo("-" * len(title))
             click.echo(title)
-            click.echo("-"*len(title))
+            click.echo("-" * len(title))
             click.echo("\n".join([f"{x} - {y}" for x, y in names]))
 
-        return {
-            "add_pattern": add_pattern,
-            "remove_pattern": remove_pattern,
-            "dicomtags": dicomtags,
-            "list": list
-        }
+        return {'list': list,
+                'add': add,
+                'remove': remove,
+                'list_dicomtags': list_dicomtags}
 
 
 class DefaultPatternsList(DicomPathPatterns):

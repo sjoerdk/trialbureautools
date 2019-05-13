@@ -33,14 +33,6 @@ class TrialBureauToolsCLI:
         for command in self.sort_cli.get_commands().values():
             self.sorter.add_command(command)
 
-        @click.group()
-        def admin():
-            """Admin options for sorter"""
-            pass
-        self.sorter.add_command(admin)
-        for command in self.sort_cli.get_admin_commands().values():
-            admin.add_command(command)
-
         self.main.add_command(self.sorter)
 
     @staticmethod

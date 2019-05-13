@@ -70,7 +70,7 @@ def test_cli_dicomsort_add_key(tmp_path, mock_click_echo):
 
     runner = CliRunner()
     runner.invoke(
-        cli.get_admin_commands()["add_pattern"], ["test", "/(PatientID)/somepath/"]
+        cli.get_pattern_commands()["add"], ["test", "/(PatientID)/somepath/"]
     )
 
     loaded_patterns = DicomSortCLI(configuration_file=config_file).pattern_list
@@ -81,7 +81,7 @@ def test_cli_dicomsort_remove_key(a_default_cli, mock_click_echo):
     """When loaded with a non-existent config file path, dicomsort CLI should create a default one
     """
     runner = CliRunner()
-    runner.invoke(a_default_cli.get_admin_commands()["remove_pattern"], ["idis"])
+    runner.invoke(a_default_cli.get_pattern_commands()["remove"], ["idis"])
 
     loaded_patterns = DicomSortCLI(
         configuration_file=a_default_cli.configuration_file
@@ -93,7 +93,7 @@ def test_cli_dicomsort_list(a_default_cli, mock_click_echo):
     """When loaded with a non-existent config file path, dicomsort CLI should create a default one
     """
     runner = CliRunner()
-    result = runner.invoke(a_default_cli.get_admin_commands()["list"])
+    result = runner.invoke(a_default_cli.get_pattern_commands()["list"])
 
     assert result.exit_code == 0
 
@@ -102,5 +102,5 @@ def test_cli_dicomsort_dicomtags(a_default_cli, mock_click_echo):
     """List all dicomtags
     """
     runner = CliRunner()
-    assert runner.invoke(a_default_cli.get_admin_commands()["dicomtags"]).exit_code == 0
-    assert runner.invoke(a_default_cli.get_admin_commands()["dicomtags"], ["--all"]).exit_code == 0
+    assert runner.invoke(a_default_cli.get_pattern_commands()["list_dicomtags"]).exit_code == 0
+    assert runner.invoke(a_default_cli.get_pattern_commands()["list_dicomtags"], ["--all"]).exit_code == 0
