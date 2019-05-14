@@ -70,6 +70,7 @@ def test_dicom_path_parse_exceptions(pattern):
         ("(PatientID)/(0008,1030)/"),
         ("just_some_path/WITH/capitals/12345"),
         ("just_some_path/WITH/capitals/(count:SOPInstanceUID).dcm"),
+        ("X:/windows/path")
     ],
 )
 def test_dicom_path_parse(pattern):

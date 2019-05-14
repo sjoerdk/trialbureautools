@@ -96,6 +96,14 @@ def test_full_path_mapper_with_root(some_more_dicom_files):
         assert str(path).startswith("/tmp/folder/something/")
 
 
+def test_full_path_mapper_with_windows_root(some_more_dicom_files):
+    pattern = "/file(count:SOPInstanceUID)"
+    mapper = FullPathMapper(pattern=pattern, root_path="X:/something")
+    mapped = mapper.map(some_more_dicom_files)
+    for path in mapped.as_flat_dict().values():
+        assert str(path).startswith("X:/something")
+
+
 def test_dicom_sort_count(some_more_dicom_files):
     """ Check the count functionality, which will replace a variable part of the pattern with a number based
     on the number of unique elements int that folder"""
