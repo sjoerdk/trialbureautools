@@ -19,7 +19,7 @@ trialbureautools
 
 
 
-Command line utilities for the radboudumc trial bureau
+Command line utility for the radboudumc trial bureau.
 
 
 * Free software: MIT license
@@ -29,7 +29,8 @@ Command line utilities for the radboudumc trial bureau
 Features
 --------
 
-* Set folder permissions
+* Sort DICOM files into folders based on DICOM tag patterns
+* Set windows icacls folder permissions
 
 Credits
 -------
