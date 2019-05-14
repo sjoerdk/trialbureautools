@@ -1,11 +1,15 @@
 import collections
 from os import PathLike, path
+from pathlib import Path
 
 import click
 import yaml
+from click.exceptions import BadParameter, UsageError
 
 from dicomsort.core import DicomPathPattern
 from collections import UserDict
+
+from dicomsort.folderprocessing import FolderMapper, FolderMapperException, ProgressBar
 
 
 class DicomPathPatterns(UserDict):
@@ -106,6 +110,9 @@ class SerializableDicomPathPattern(DicomPathPattern):
 
 
 class DicomSortCLI:
+
+    DEFAULT_OUPUT_FOLDER_NAME = "sorted"  # default folder to copy sorted items into
+
     def __init__(self, configuration_file: PathLike):
         self.assert_configuration_file(configuration_file)
         self.configuration_file = configuration_file
@@ -141,17 +148,61 @@ class DicomSortCLI:
         """
 
         @click.command()
-        @click.argument('input_dir', type=click.Path(exists=True))
-        @click.argument('pattern')
-        @click.option('--output_dir', type=click.Path(), help="Write sorted files into the given directory")
+        @click.argument("input_dir", type=click.Path(exists=True))
+        @click.argument("pattern")
+        @click.option(
+            "--output_dir",
+            type=click.Path(exists=False),
+            help="Write sorted files into the given directory",
+        )
         def sort(input_dir, pattern, output_dir):
             """Sort all dicom files in given directory
 
             """
+            input_dir_abs = Path(path.abspath(input_dir))
 
-            input_dir_abs = path.abspath(input_dir)
-            pattern = self.pattern_list[pattern]
-            click.echo(f"sorting {input_dir_abs} with {pattern}, writing to {output_dir}")
+            if not output_dir:
+                output_dir = input_dir_abs.parent / (str(input_dir_abs.name) + "_" + self.DEFAULT_OUPUT_FOLDER_NAME)
+
+            if not pattern in self.pattern_list.keys():
+                raise BadParameter(f"Unknown pattern '{pattern}'. Available patterns:{list(self.pattern_list.keys())}")
+
+            if Path(output_dir).exists():
+                raise BadParameter(f"Output dir '{output_dir}' already exists. Aborting.")
+
+            click.echo(
+                f"Sorting {input_dir_abs} with pattern '{pattern}', writing to {output_dir}"
+            )
+
+            files = [x for x in input_dir_abs.glob("**/*") if x.is_file()]
+            seconds_needed = seconds_to_str(len(files) * 0.1)
+            click.echo(
+                f"Found {len(files)}. Mapping might take about {seconds_needed}"
+            )
+
+            click.echo(f"Mapping all dicom files to output files...")
+            pattern_obj: SerializableDicomPathPattern = self.pattern_list[pattern]
+            mapper = FolderMapper()
+            try:
+                mapping = mapper.generate_mapping(
+                    input_folder=input_dir_abs,
+                    output_folder=output_dir,
+                    pattern=pattern_obj.pattern_string,
+                ).as_flat_dict()
+            except FolderMapperException as e:
+                UsageError((f"Mapping error: {e}"))
+
+            click.echo(f"Mapped {len(mapping)} files. No errors found")
+            if click.confirm("Do you want to start sorting files?"):
+                chunks = mapper.get_executions_chunks(mapping=mapping, number_of_chunks=11)
+                bar = ProgressBar(steps=11)
+                click.echo(bar)
+                for chunk in chunks:
+                    chunk.execute()
+                    bar.step()
+                    click.echo(bar)
+
+            click.echo(f"Sorted {len(mapping)} files into {output_dir}")
 
         @click.group()
         def pattern():
@@ -161,13 +212,9 @@ class DicomSortCLI:
         for command in self.get_pattern_commands().values():
             pattern.add_command(command)
 
-        return {
-            "sort": sort,
-            "patterns": pattern,
-        }
+        return {"sort": sort, "patterns": pattern}
 
     def get_pattern_commands(self):
-
         @click.command(short_help="List all patterns")
         def list():
             """list all DICOM path patterns"""
@@ -241,10 +288,34 @@ class DicomSortCLI:
             click.echo("-" * len(title))
             click.echo("\n".join([f"{x} - {y}" for x, y in names]))
 
-        return {'list': list,
-                'add': add,
-                'remove': remove,
-                'list_dicomtags': list_dicomtags}
+        return {
+            "list": list,
+            "add": add,
+            "remove": remove,
+            "list_dicomtags": list_dicomtags,
+        }
+
+
+def seconds_to_str(seconds):
+    """Approximate text description of how many seconds
+
+    Parameters
+    ----------
+    seconds: int
+        number of seconds
+
+    Returns
+    -------
+    str:
+        Something like: 30 seconds, or 4 minutes
+
+    """
+    minutes = int(seconds / 60)
+
+    if minutes:
+        return f"{minutes} min, "
+    else:
+        return f"{seconds % 60:0.0f} seconds"
 
 
 class DefaultPatternsList(DicomPathPatterns):

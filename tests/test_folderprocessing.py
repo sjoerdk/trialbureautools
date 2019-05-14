@@ -16,7 +16,7 @@ from dicomsort.folderprocessing import (
     FolderMapper,
     FolderMapperException,
     DelayedFunction,
-)
+    ProgressBar)
 from tests import RESOURCE_PATH
 
 
@@ -24,7 +24,9 @@ from tests import RESOURCE_PATH
 def folderprocessing_mock_copyfile(monkeypatch):
     """Turn off copyfile, return mock that will records calls"""
     mock_copyfile = Mock()
+    mock_makedirs = Mock()
     monkeypatch.setattr("dicomsort.folderprocessing.copyfile", mock_copyfile)
+    monkeypatch.setattr("dicomsort.folderprocessing.makedirs", mock_makedirs)
     return mock_copyfile
 
 
@@ -48,6 +50,7 @@ def test_folder_mapper(tmp_path, folderprocessing_mock_copyfile):
     mapper.execute_mapping(mapping)
     # each file should have been copied
     assert folderprocessing_mock_copyfile.call_count == len(mapping)
+
 
 
 def test_folder_mapper_copy_errors(tmp_path, folderprocessing_mock_copyfile):
@@ -94,7 +97,7 @@ def test_folder_mapper_execute_chunked(tmp_path, folderprocessing_mock_copyfile)
         }
     )
     mapper = FolderMapper()
-    chunks = mapper.get_mapping_chunks(mapping=mapping, number_of_chunks=11)
+    chunks = mapper.get_executions_chunks(mapping=mapping, number_of_chunks=11)
     assert len(chunks) == 11
 
     call_counts = [folderprocessing_mock_copyfile.call_count]
@@ -113,7 +116,7 @@ def test_folder_mapper_execute_chunked_too_many_chunks(tmp_path, folderprocessin
         }
     )
     mapper = FolderMapper()
-    chunks = mapper.get_mapping_chunks(mapping=mapping, number_of_chunks=5)
+    chunks = mapper.get_executions_chunks(mapping=mapping, number_of_chunks=5)
     assert len(chunks) == 5
 
     call_counts = [folderprocessing_mock_copyfile.call_count]
@@ -133,3 +136,17 @@ def test_chunked_delayed_execution():
     assert function1.execute() == "EFEG"
     assert function2.execute() == range(1, 3)
     assert function3.execute().elements[0].content == DicomPathPattern('testpath').elements[0].content
+
+
+def test_progressbar():
+    bar = ProgressBar(steps=11)
+
+    assert str(bar) == "[           ]"
+    for _ in range(3):
+        bar.step()
+    assert str(bar) == "[###        ]"
+    for _ in range(12):
+        bar.step()
+    assert str(bar) == "[###########]"
+    bar.reset()
+    assert str(bar) == "[           ]"

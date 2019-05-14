@@ -49,6 +49,9 @@ class DicomPathPattern:
 
         self.elements = parsed
 
+    def __str__(self):
+        return self.pattern_string
+
 
 class PathGenerator:
     """Describes how to generate paths for DICOM files

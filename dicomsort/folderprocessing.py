@@ -2,6 +2,7 @@
 
 Made this to separate the nitty-gritty of filesystem operations from pure-python modules
 """
+from os import makedirs
 from itertools import zip_longest
 from pathlib import Path
 from shutil import copyfile
@@ -44,7 +45,8 @@ class FolderMapper:
 
         """
         # check availability of output folder. Try to fail early here
-
+        input_folder = Path(input_folder)
+        output_folder = Path(output_folder)
         files = [x for x in input_folder.glob("**/*") if x.is_file()]
         mapper = FullPathMapper(pattern=pattern, root_path=output_folder, check_path_lengths=True)
         try:
@@ -74,13 +76,13 @@ class FolderMapper:
         flat = mapping.as_flat_dict()
         for source, destination in flat.items():
             try:
-                pass
+                makedirs(destination.parent, exist_ok=True)
                 copyfile(source, destination)
             except OSError as e:
                 msg = f"Error trying to copy {source} to {destination}: {e}"
                 raise FolderMapperException(msg)
 
-    def get_mapping_chunks(self, mapping, number_of_chunks):
+    def get_executions_chunks(self, mapping, number_of_chunks):
         """Split execution of this mapping into chunks. Each chunk can be executed individually
         Mapping items will be distributed over chunks as well as possible.
         If number of chunks is larger then number of mapping items, some of the returned Delayed functions will be
@@ -105,6 +107,33 @@ class FolderMapper:
 
         chunks = [DelayedFunction(function=self.execute_mapping, kwargs={'mapping': x}) for x in mappings]
         return chunks
+
+
+class ProgressBar:
+    """A text-based progress bar. Goes from [#     ] to [#### ] to [#######] """
+
+    def __init__(self, steps, current_step=0):
+        """
+
+        Parameters
+        ----------
+        steps: int
+            number of steps this bar can have.
+        current_step: int
+            current number of steps taken
+        """
+        self.steps = steps
+        self.current_step = current_step
+
+    def __str__(self):
+        return "[" + ("#"*self.current_step) + (" "*(self.steps-self.current_step)) + "]"
+
+    def step(self):
+        """Increase step by 1"""
+        self.current_step = min(self.steps, self.current_step + 1)
+
+    def reset(self):
+        self.current_step = 0
 
 
 def grouper(n, iterable, padvalue=None):

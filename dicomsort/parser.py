@@ -333,7 +333,7 @@ class DicomTag(VariableElement):
         if not self.is_valid():
             raise DicomTagResolutionException(f"Tag ({self.tag_code}) is not valid. Should be xxxx,xxxx ")
         try:
-            tag_value = ds[self.tag_code[0:4], self.tag_code[5:9]].value
+            tag_value = str(ds[self.tag_code[0:4], self.tag_code[5:9]].value)
             tag_value = self.clean_string(tag_value)
             return ResolvedPathElement(path_element=self, resolved_value=tag_value)
         except KeyError:

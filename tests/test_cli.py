@@ -11,10 +11,11 @@ from tests import RESOURCE_PATH
 
 @pytest.fixture()
 def mock_click_echo(monkeypatch):
-    """Stop click from writing to console, capture to mock instead"""
-    mock_echo = Mock()
+    """Stop click from writing to console, capture to string instead"""
+    output = []
+    mock_echo = lambda x: output.append(x)
     monkeypatch.setattr("trialbureautools.cli.dicomsort.click.echo", mock_echo)
-    return mock_echo
+    return output
 
 
 @pytest.fixture()
@@ -29,6 +30,16 @@ def a_default_cli(tmpdir, mock_click_echo):
     """A CLI that has a non-existent file as config. CLI will fill it with default contents"""
     config_file = Path(tmpdir) / "test_remove_cli_config_file.yaml"
     return DicomSortCLI(configuration_file=config_file)
+
+
+@pytest.fixture()
+def folderprocessing_mock_copyfile(monkeypatch):
+    """Turn off copyfile, return mock that will records calls"""
+    mock_copyfile = Mock()
+    mock_makedirs = Mock()
+    monkeypatch.setattr("dicomsort.folderprocessing.copyfile", mock_copyfile)
+    monkeypatch.setattr("dicomsort.folderprocessing.makedirs", mock_makedirs)
+    return mock_copyfile
 
 
 def test_cli_main(a_test_cli):
@@ -69,9 +80,7 @@ def test_cli_dicomsort_add_key(tmp_path, mock_click_echo):
     cli = DicomSortCLI(configuration_file=config_file)
 
     runner = CliRunner()
-    runner.invoke(
-        cli.get_pattern_commands()["add"], ["test", "/(PatientID)/somepath/"]
-    )
+    runner.invoke(cli.get_pattern_commands()["add"], ["test", "/(PatientID)/somepath/"])
 
     loaded_patterns = DicomSortCLI(configuration_file=config_file).pattern_list
     assert list(loaded_patterns.keys()) == ["idis", "nucmed", "test"]
@@ -102,5 +111,29 @@ def test_cli_dicomsort_dicomtags(a_default_cli, mock_click_echo):
     """List all dicomtags
     """
     runner = CliRunner()
-    assert runner.invoke(a_default_cli.get_pattern_commands()["list_dicomtags"]).exit_code == 0
-    assert runner.invoke(a_default_cli.get_pattern_commands()["list_dicomtags"], ["--all"]).exit_code == 0
+    assert (
+        runner.invoke(a_default_cli.get_pattern_commands()["list_dicomtags"]).exit_code
+        == 0
+    )
+    assert (
+        runner.invoke(
+            a_default_cli.get_pattern_commands()["list_dicomtags"], ["--all"]
+        ).exit_code
+        == 0
+    )
+
+
+def test_cli_dicomsort_sort_errors(a_default_cli, mock_click_echo, folderprocessing_mock_copyfile):
+
+    runner = CliRunner()
+    result = runner.invoke(a_default_cli.get_commands()["sort"], [".", "test"])
+    assert result.exit_code == 2
+    assert "Unknown pattern" in result.output
+
+
+def test_cli_dicomsort_sort(a_default_cli, mock_click_echo, folderprocessing_mock_copyfile):
+
+    runner = CliRunner()
+    input_path = str(RESOURCE_PATH / "adicomdir" / "folder1" / "folder1A")
+    result = runner.invoke(a_default_cli.get_commands()["sort"], [input_path, "idis"], input="y\ny\ny")
+    assert result.exit_code == 0
