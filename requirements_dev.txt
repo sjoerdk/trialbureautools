@@ -8,7 +8,7 @@ coverage==4.5.3
 Sphinx==2.0.1
 sphinx-autodoc-typehints==1.6.0
 sphinx_rtd_theme==0.4.3
-lark-parser==0.7.0
+lark-parser==0.7.1
 
 pytest==4.4.1
 pytest-runner==4.2
