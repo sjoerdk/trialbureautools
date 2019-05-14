@@ -49,3 +49,4 @@ Once you have a copy of the source, you can install it with:
 
 .. _Github repo: https://github.com/sjoerdk/trialbureautools
 .. _tarball: https://github.com/sjoerdk/trialbureautools/tarball/master
+To install
