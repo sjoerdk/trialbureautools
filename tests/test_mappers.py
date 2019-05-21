@@ -116,3 +116,8 @@ def test_dicom_sort_count(some_more_dicom_files):
     tree.apply_count()
     mapping = tree.as_flat_dict()
     final = sorted(list(mapping.values()))
+    assert final[0].name == "file0"
+    assert final[2].name == "file00"
+    assert final[3].name == "file01"
+    assert final[4].name == "file02"
+    assert final[12].name == "file10"
