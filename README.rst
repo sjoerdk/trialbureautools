@@ -35,7 +35,8 @@ Features
 Getting started
 ---------------
 
-See :ref:`getting_started`
+See `Getting started <https://trialbureautools.readthedocs.io/en/latest/getting_started.html>`_
+
 
 Credits
 -------
