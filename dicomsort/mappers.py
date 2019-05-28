@@ -106,13 +106,13 @@ class FullPathMapper(PathMapper):
 
         Raises
         ------
-        OverlappingFilePathException(MappingException):
+        OverlappingFilePathException
             When mapped paths overlap, which would cause existing files to be overwritten
 
-        PathTooLongForWindowsException(MappingException):
+        PathTooLongForWindowsException
             When any path is longer then windows max file path length. Raised only if self.check_path_lengths = True
 
-        UnsafeMappingException(MappingException):
+        UnsafeMappingException
             When any of the output paths equals any of the input paths. This means executing this mapping would
             overwrite part of the input
 

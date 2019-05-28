@@ -38,7 +38,7 @@ class DicomPathPattern:
 
         Raises
         ------
-        DicomPathPatternException:
+        DicomPathPatternException
             If pattern_string cannot be parsed to a list of strings and valid dicom tags
         """
         self.pattern_string = pattern_string
@@ -84,7 +84,7 @@ class PathGenerator:
 
         Raises
         ------
-        PathGeneratorException:
+        PathGeneratorException
             If the given file cannot be read or is not dicom
 
         """
@@ -393,7 +393,7 @@ class StraightPathMapping(PathMapping):
 class PathTreeMapping(PathMapping):
     """A dictionary-like object mapping from each input path to each potential
 
-    Dict[Path:TentativePath]
+    Dict(Path:TentativePath)
 
     """
 

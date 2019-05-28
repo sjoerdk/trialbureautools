@@ -39,7 +39,7 @@ class FolderMapper:
 
         Raises
         ------
-        FolderMapperException:
+        FolderMapperException
             When anything goes wrong during mapping
 
 
@@ -68,7 +68,7 @@ class FolderMapper:
 
         Raises
         ------
-        FolderMapperException:
+        FolderMapperException
             When copying fails for any file
 
 

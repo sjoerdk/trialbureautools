@@ -47,12 +47,12 @@ class DicomPathPatternParser:
 
         Returns
         -------
-        List[DicomPathElement]:
+        List(DicomPathElement):
             List with different DicomPathElements for each string literal, dicom tag or dicom tag name
 
         Raises
         ------
-        DicomPatternException:
+        DicomPatternException
             if anything goes wrong during parsing
 
         """
